@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: freeapi-forge-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - freeapi-network
+
+  postgres:
+    image: postgres:17
+    container_name: freeapi-forge-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-freeapi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-freeapi_password}
+      POSTGRES_DB: ${POSTGRES_DB:-freeapi_forge}
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-freeapi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - freeapi-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: freeapi-forge-app
+    environment:
+      NODE_ENV: production
+      PORT: 5051
+      DATABASE_URL: postgresql://${POSTGRES_USER:-freeapi}:${POSTGRES_PASSWORD:-freeapi_password}@postgres:5432/${POSTGRES_DB:-freeapi_forge}
+      REDIS_URL: redis://redis:6379/1
+      LITELLM_URL: ${LITELLM_URL:-http://host.docker.internal:5050}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-sk-ai-lab-master-key}
+      JWT_SECRET: ${JWT_SECRET:-your-jwt-secret}
+    ports:
+      - "5051:5051"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5051/api/trpc/health.check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - freeapi-network
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: freeapi-forge-ollama
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - freeapi-network
+    restart: unless-stopped
+    profiles:
+      - with-ollama
+
+volumes:
+  redis-data:
+    driver: local
+  postgres-data:
+    driver: local
+  ollama-data:
+    driver: local
+
+networks:
+  freeapi-network:
+    driver: bridge

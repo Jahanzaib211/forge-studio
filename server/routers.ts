@@ -1,0 +1,423 @@
+import { COOKIE_NAME } from "@shared/const";
+import { getSessionCookieOptions } from "./_core/cookies";
+import { systemRouter } from "./_core/systemRouter";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
+import { z } from "zod";
+import {
+  getDb,
+  createRequestHistory,
+  getRequestHistory,
+  getRequestHistoryCount,
+  getApiKeysByTeamId,
+  getBudgetLimit,
+  getAllProviders,
+  updateProvider,
+  updateBudgetLimit,
+  getOrCreateBudgetLimit,
+  createAuditLog,
+  updateBudgetSpend,
+} from "./db";
+import { providerService } from "./services/provider_service";
+import { llmRouter } from "./services/llm_router";
+import {
+  addModelToConfig,
+  removeModelFromConfig,
+  testModel,
+  getAllModelsFromConfig,
+  loadLitellmConfig,
+} from "./services/model_manager";
+import {
+  getLiveStats,
+  getHourlyVolume,
+  getTopModels,
+  getProviderPerformance,
+  getModelStats,
+  getModelHistory,
+} from "./services/analytics_service";
+
+export const appRouter = router({
+  system: systemRouter,
+  auth: router({
+    me: publicProcedure.query((opts) => opts.ctx.user),
+    logout: publicProcedure.mutation(({ ctx }) => {
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      return {
+        success: true,
+      } as const;
+    }),
+  }),
+
+  // Chat completions endpoint
+  chat: router({
+    complete: protectedProcedure
+      .input(
+        z.object({
+          messages: z.array(
+            z.object({
+              role: z.enum(["system", "user", "assistant"]),
+              content: z.string(),
+            })
+          ),
+          taskType: z.enum(["chat", "coding", "vision", "fast", "long_context", "local"]).default("chat"),
+          maxTokens: z.number().int().min(1).max(8192).default(1024),
+          temperature: z.number().min(0).max(2).default(0.7),
+          teamId: z.string().default("default"),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const monthYear = new Date().toISOString().slice(0, 7);
+        const budget = await getOrCreateBudgetLimit(1, monthYear, 10);
+        
+        if (budget) {
+          const currentSpendUsd = budget.currentSpendUsd / 1000000;
+          if (currentSpendUsd >= budget.monthlyLimitUsd) {
+            throw new Error(`Monthly budget limit exceeded: $${currentSpendUsd.toFixed(2)} / $${budget.monthlyLimitUsd}`);
+          }
+        }
+
+        const startTime = Date.now();
+        const response = await llmRouter.complete({
+          messages: input.messages,
+          taskType: input.taskType,
+          maxTokens: input.maxTokens,
+          temperature: input.temperature,
+          teamId: input.teamId,
+        });
+
+        const latencyMs = Date.now() - startTime;
+        const costUsd = (response.usage.total_tokens / 1000000) * 0.0001;
+        const isError = response.choices[0]?.finish_reason === "error";
+        const providerName = response.provider;
+
+        if (isError) {
+          await providerService.recordFailure(providerName);
+        } else {
+          await providerService.recordSuccess(providerName);
+        }
+
+        const allProviders = await getAllProviders();
+        const providerRecord = allProviders.find(p => p.name === providerName);
+        const providerId = providerRecord?.id || null;
+
+        await createRequestHistory(
+          response.id,
+          1,
+          providerId,
+          input.taskType,
+          response.usage.prompt_tokens,
+          response.usage.completion_tokens,
+          costUsd,
+          isError ? "error" : "success"
+        );
+
+        await updateBudgetSpend(1, monthYear, costUsd);
+
+        return response;
+      }),
+  }),
+
+  // Provider management
+  providers: router({
+    list: publicProcedure.query(async () => {
+      const providers = await getAllProviders();
+      return providers.map((p) => ({
+        id: p.id,
+        name: p.name,
+        endpoint: p.litellmEndpoint,
+        enabled: p.enabled === 1,
+        qualityScore: p.qualityScore,
+        latencyMs: p.latencyMs,
+        costPerMToken: p.costPerMToken,
+      }));
+    }),
+
+    status: publicProcedure.query(async ({ ctx }) => {
+      const statuses = await providerService.getProviderStatus();
+      return statuses.map((s) => ({
+        id: s.id,
+        name: s.provider,
+        litellmEndpoint: s.litellmEndpoint,
+        enabled: s.enabled,
+        circuitState: s.circuitState,
+        qualityScore: s.qualityScore,
+        latencyMs: s.latencyMs,
+        failureCount: s.failureCount,
+        rateLimitCooldown: s.rateLimitCooldown,
+      }));
+    }),
+  }),
+
+  // Budget tracking
+  budget: router({
+    getMonthlySpend: protectedProcedure
+      .input(z.object({ teamId: z.string().default("default") }))
+      .query(async ({ input }) => {
+        const monthYear = new Date().toISOString().slice(0, 7);
+        const budget = await getOrCreateBudgetLimit(1, monthYear, 10);
+
+        return {
+          teamId: input.teamId,
+          monthYear,
+          currentSpend: (budget?.currentSpendUsd || 0) / 1000000,
+          monthlyLimit: budget?.monthlyLimitUsd || 10,
+          percentageUsed: budget ? ((budget.currentSpendUsd / 1000000) / (budget.monthlyLimitUsd || 10)) * 100 : 0,
+        };
+      }),
+
+    updateLimit: protectedProcedure
+      .input(
+        z.object({
+          teamId: z.string(),
+          newLimit: z.number().min(1),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user?.role !== "admin") {
+          throw new Error("Unauthorized");
+        }
+
+        const monthYear = new Date().toISOString().slice(0, 7);
+        await updateBudgetLimit(1, monthYear, input.newLimit);
+        await createAuditLog(ctx.user.id, 1, "UPDATE_BUDGET_LIMIT", `New limit: $${input.newLimit}`);
+
+        return { success: true };
+      }),
+  }),
+
+  // Request history
+  requests: router({
+    list: protectedProcedure
+      .input(
+        z.object({
+          teamId: z.string().default("default"),
+          limit: z.number().int().min(1).max(100).default(50),
+          offset: z.number().int().min(0).default(0),
+        })
+      )
+      .query(async ({ input }) => {
+        const history = await getRequestHistory(1, input.limit, input.offset);
+        const total = await getRequestHistoryCount(1);
+
+        return {
+          requests: history.map((r) => ({
+            id: r.id,
+            provider: r.providerId?.toString() || "unknown",
+            taskType: r.taskType,
+            tokens: r.totalTokens,
+            costUsd: (r.costUsd || 0) / 1000000,
+            status: r.status,
+            timestamp: r.createdAt,
+          })),
+          total,
+          limit: input.limit,
+          offset: input.offset,
+        };
+      }),
+  }),
+
+  // Admin panel
+  admin: router({
+    updateProvider: protectedProcedure
+      .input(
+        z.object({
+          providerId: z.number(),
+          enabled: z.boolean().optional(),
+          qualityScore: z.number().min(0).max(100).optional(),
+          latencyMs: z.number().min(0).optional(),
+          costPerMToken: z.number().min(0).optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user?.role !== "admin") {
+          throw new Error("Unauthorized");
+        }
+
+        const updates: Record<string, any> = {};
+        if (input.enabled !== undefined) updates.enabled = input.enabled ? 1 : 0;
+        if (input.qualityScore !== undefined) updates.qualityScore = input.qualityScore;
+        if (input.latencyMs !== undefined) updates.latencyMs = input.latencyMs;
+        if (input.costPerMToken !== undefined) updates.costPerMToken = input.costPerMToken;
+
+        await updateProvider(input.providerId, updates);
+        await createAuditLog(
+          ctx.user.id,
+          null,
+          "UPDATE_PROVIDER",
+          `Provider ${input.providerId}: ${JSON.stringify(updates)}`
+        );
+
+        return { success: true };
+      }),
+
+    getProviders: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user?.role !== "admin") {
+        throw new Error("Unauthorized");
+      }
+
+      const providers = await getAllProviders();
+      return providers.map((p) => ({
+        id: p.id,
+        name: p.name,
+        endpoint: p.litellmEndpoint,
+        enabled: p.enabled === 1,
+        qualityScore: p.qualityScore,
+        latencyMs: p.latencyMs,
+        costPerMToken: p.costPerMToken,
+      }));
+    }),
+
+    resetCircuitBreaker: protectedProcedure
+      .input(z.object({ providerName: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user?.role !== "admin") {
+          throw new Error("Unauthorized");
+        }
+
+        await providerService.resetCircuitBreaker(input.providerName);
+        await createAuditLog(
+          ctx.user.id,
+          null,
+          "RESET_CIRCUIT_BREAKER",
+          `Provider: ${input.providerName}`
+        );
+
+        return { success: true };
+      }),
+
+    resetProviderHealth: protectedProcedure
+      .input(z.object({ providerName: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user?.role !== "admin") {
+          throw new Error("Unauthorized");
+        }
+
+        await providerService.resetProviderHealth(input.providerName);
+        await createAuditLog(
+          ctx.user.id,
+          null,
+          "RESET_PROVIDER_HEALTH",
+          `Provider: ${input.providerName}`
+        );
+
+        return { success: true };
+      }),
+  }),
+
+  // System health
+  health: router({
+    check: publicProcedure.query(async () => {
+      return {
+        status: "healthy",
+        timestamp: new Date(),
+      };
+    }),
+
+    detailed: publicProcedure.query(async () => {
+      let dbStatus = "disconnected";
+      let redisStatus = "disconnected";
+
+      try {
+        const db = await getDb();
+        if (db) {
+          dbStatus = "connected";
+        }
+      } catch (error) {
+        console.error("[Health] Database check failed:", error);
+      }
+
+      try {
+        const status = await providerService.getProviderStatus();
+        redisStatus = "connected";
+      } catch (error) {
+        console.error("[Health] Redis check failed:", error);
+      }
+
+      return {
+        status: dbStatus === "connected" && redisStatus === "connected" ? "healthy" : "degraded",
+        redis: redisStatus,
+        database: dbStatus,
+        timestamp: new Date(),
+      };
+    }),
+  }),
+
+  // Model Manager
+  models: router({
+    list: publicProcedure.query(async () => {
+      return getAllModelsFromConfig();
+    }),
+
+    config: publicProcedure.query(async () => {
+      const config = loadLitellmConfig();
+      return config.model_list || [];
+    }),
+
+    add: protectedProcedure
+      .input(
+        z.object({
+          modelName: z.string().min(1),
+          provider: z.string().min(1),
+          modelId: z.string().min(1),
+          apiKey: z.string().optional(),
+          apiBase: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const success = await addModelToConfig(
+          input.modelName,
+          input.provider,
+          input.modelId,
+          input.apiKey,
+          input.apiBase
+        );
+        return { success };
+      }),
+
+    remove: protectedProcedure
+      .input(z.object({ modelName: z.string() }))
+      .mutation(async ({ input }) => {
+        const success = await removeModelFromConfig(input.modelName);
+        return { success };
+      }),
+
+    test: publicProcedure
+      .input(z.object({ modelName: z.string() }))
+      .mutation(async ({ input }) => {
+        return await testModel(input.modelName);
+      }),
+  }),
+
+  // Analytics from LiteLLM SpendLogs
+  analytics: router({
+    liveStats: publicProcedure.query(async () => {
+      return await getLiveStats();
+    }),
+
+    hourlyVolume: publicProcedure.query(async () => {
+      return await getHourlyVolume();
+    }),
+
+    topModels: publicProcedure
+      .input(z.object({ limit: z.number().int().min(1).max(20).default(5) }))
+      .query(async ({ input }) => {
+        return await getTopModels(input.limit);
+      }),
+
+    providerPerformance: publicProcedure.query(async () => {
+      return await getProviderPerformance();
+    }),
+
+    modelStats: publicProcedure.query(async () => {
+      return await getModelStats();
+    }),
+
+    modelHistory: publicProcedure
+      .input(z.object({ model: z.string(), limit: z.number().int().min(1).max(100).default(20) }))
+      .query(async ({ input }) => {
+        return await getModelHistory(input.model, input.limit);
+      }),
+  }),
+});
+
+export type AppRouter = typeof appRouter;
