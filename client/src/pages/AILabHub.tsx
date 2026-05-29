@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import TestPanel from "@/components/hub/TestPanel";
+import LocalScanner from "@/components/hub/LocalScanner";
 
 type CatalogModel = {
   id: string;
@@ -92,10 +94,10 @@ export default function AILabHub() {
   const [search, setSearch] = useState("");
   const [poolFilter, setPoolFilter] = useState<string>("all");
   const [selectedProvider, setSelectedProvider] = useState<string>("all");
-  const [testingId, setTestingId] = useState<string | null>(null);
+  const [showTestPanel, setShowTestPanel] = useState(false);
+  const [testPanelModel, setTestPanelModel] = useState<{ name: string; id: string; provider: string; pool: string } | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const addMutation = trpc.catalog.providers.addQuick.useMutation();
-  const testMutation = trpc.catalog.models.test.useMutation();
   const knownProviders = trpc.catalog.providers.listKnown.useQuery();
   const localScan = trpc.catalog.local.scan.useQuery(undefined, { enabled: false });
   const utils = trpc.useUtils();
@@ -134,19 +136,9 @@ export default function AILabHub() {
     }
   };
 
-  const handleTestModel = async (modelName: string) => {
-    setTestingId(modelName);
-    try {
-      const result = await testMutation.mutateAsync({ modelName });
-      if (result.success) {
-        toast.success(`${modelName}: ${result.latency}ms`);
-      } else {
-        toast.error(`${modelName}: ${result.error || "Failed"}`);
-      }
-    } catch (e: any) {
-      toast.error(`${modelName}: ${e?.message || "Error"}`);
-    }
-    setTestingId(null);
+  const handleTestModel = async (model: CatalogModel) => {
+    setTestPanelModel({ name: model.displayName, id: model.id, provider: model.providerName, pool: model.pool });
+    setShowTestPanel(true);
   };
 
   return (
@@ -281,6 +273,7 @@ export default function AILabHub() {
 
           {/* Main Model Grid */}
           <div className="flex-1 min-w-0">
+            <LocalScanner />
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
               <Input
@@ -309,7 +302,6 @@ export default function AILabHub() {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {filtered.map((m) => {
                   const stat = statsMap.get(m.id) || statsMap.get(m.displayName);
-                  const isTesting = testingId === m.id;
 
                   return (
                     <Card
@@ -333,7 +325,6 @@ export default function AILabHub() {
                         </div>
                       </CardHeader>
                       <CardContent>
-                        {/* Status row */}
                         <div className="flex items-center gap-3 mb-2">
                           <span className="flex items-center gap-1 text-[11px] text-slate-400">
                             <span className={cn("w-1.5 h-1.5 rounded-full", statusColors[m.status])} />
@@ -349,12 +340,7 @@ export default function AILabHub() {
                               {(stat.successRate).toFixed(1)}%
                             </span>
                           )}
-                          {m.pool === "local" && m.status === "running" && (
-                            <span className="text-[11px] font-mono text-blue-400">live</span>
-                          )}
                         </div>
-
-                        {/* Size / quant info */}
                         {(m.size || m.quantization) && (
                           <div className="flex gap-2 text-[10px] text-slate-500 mb-2">
                             {m.size && <span>{m.size}</span>}
@@ -362,21 +348,14 @@ export default function AILabHub() {
                             {m.format && <span>· {m.format}</span>}
                           </div>
                         )}
-
-                        {/* Action buttons */}
                         <div className="flex gap-2 mt-2">
                           <Button
                             variant="outline"
                             size="sm"
                             className="h-7 text-xs flex-1"
-                            onClick={() => handleTestModel(m.id)}
-                            disabled={isTesting}
+                            onClick={() => handleTestModel(m)}
                           >
-                            {isTesting ? (
-                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                            ) : (
-                              <TestTube className="h-3 w-3 mr-1" />
-                            )}
+                            <TestTube className="h-3 w-3 mr-1" />
                             Test
                           </Button>
                           <Button
@@ -436,6 +415,16 @@ export default function AILabHub() {
             </div>
           </div>
         </div>
+      )}
+      {/* Inline Test Panel */}
+      {showTestPanel && testPanelModel && (
+        <TestPanel
+          modelName={testPanelModel.name}
+          modelId={testPanelModel.id}
+          provider={testPanelModel.provider}
+          pool={testPanelModel.pool}
+          onClose={() => { setShowTestPanel(false); setTestPanelModel(null); }}
+        />
       )}
     </div>
   );

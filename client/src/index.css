@@ -111,6 +111,11 @@
   --sidebar-accent-foreground:  oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.488 0.243 264.376);
+  --accent-color: oklch(0.623 0.214 259.815);
+  --accent-ring: oklch(0.488 0.243 264.376);
+  --density-padding: 1rem;
+  --density-gap: 0.75rem;
+  --transition-speed: 0.2s;
 }
 
 @layer base {

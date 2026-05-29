@@ -15,6 +15,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface SettingsSection {
   id: string;
@@ -25,6 +26,7 @@ interface SettingsSection {
 const sections: SettingsSection[] = [
   { id: "general", label: "General", icon: SettingsIcon },
   { id: "branding", label: "Branding", icon: Palette },
+  { id: "appearance", label: "Appearance", icon: Palette },
   { id: "security", label: "Security", icon: Shield },
   { id: "system", label: "System", icon: Server },
   { id: "visibility", label: "Page Visibility", icon: Eye },
@@ -55,6 +57,7 @@ const sidebarPages = [
 export default function Settings() {
   const [activeSection, setActiveSection] = useState("general");
   const [saving, setSaving] = useState(false);
+  const { config, setAccent, setDensity, setCardStyle, setPreset, setAnimations } = useTheme();
 
   const [appName, setAppName] = useState("Forge Studio");
   const [appVersion, setAppVersion] = useState("1.0.0");
@@ -161,6 +164,115 @@ export default function Settings() {
                         </Button>
                       ))}
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {activeSection === "appearance" && (
+              <Card className="bg-slate-800/30 border-slate-700/50 backdrop-blur">
+                <CardHeader className="border-b border-slate-700/50">
+                  <CardTitle className="text-white">Appearance</CardTitle>
+                  <CardDescription>Theme presets, accent colors, and layout density</CardDescription>
+                </CardHeader>
+                <CardContent className="p-6 space-y-8">
+                  {/* Presets */}
+                  <div>
+                    <Label className="text-slate-300 text-sm font-medium mb-3 block">Theme Presets</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {([
+                        { key: "neural", label: "Neural", desc: "Slate + Blue" },
+                        { key: "cyber", label: "Cyber", desc: "Black + Cyan" },
+                        { key: "minimal", label: "Minimal", desc: "Flat & Clean" },
+                        { key: "oled", label: "OLED", desc: "Pure Black" },
+                        { key: "studio", label: "Studio", desc: "Light Mode" },
+                      ] as const).map((p) => (
+                        <button
+                          key={p.key}
+                          onClick={() => setPreset(p.key)}
+                          className={`p-3 rounded-xl border text-left transition-all ${
+                            config.preset === p.key
+                              ? "border-blue-500 bg-blue-500/10 ring-1 ring-blue-500/30"
+                              : "border-slate-700 hover:border-slate-600 bg-slate-900/50"
+                          }`}
+                        >
+                          <div className="text-sm font-medium text-white">{p.label}</div>
+                          <div className="text-xs text-slate-500 mt-0.5">{p.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Accent Color */}
+                  <div>
+                    <Label className="text-slate-300 text-sm font-medium mb-3 block">Accent Color</Label>
+                    <div className="flex gap-2">
+                      {(["blue", "purple", "cyan", "emerald", "amber", "rose"] as const).map((a) => (
+                        <button
+                          key={a}
+                          onClick={() => setAccent(a)}
+                          className={`w-9 h-9 rounded-full transition-all ${
+                            config.accent === a ? "ring-2 ring-white scale-110" : "ring-1 ring-slate-700 hover:scale-105"
+                          }`}
+                          style={{
+                            background: `var(--color-${a}-500)`,
+                          }}
+                          title={a}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Density */}
+                  <div>
+                    <Label className="text-slate-300 text-sm font-medium mb-3 block">Layout Density</Label>
+                    <div className="flex gap-2">
+                      {(["compact", "comfortable", "spacious"] as const).map((d) => (
+                        <button
+                          key={d}
+                          onClick={() => setDensity(d)}
+                          className={`px-4 py-2 rounded-lg text-sm border transition-all ${
+                            config.density === d
+                              ? "border-blue-500 bg-blue-500/10 text-white"
+                              : "border-slate-700 text-slate-400 hover:border-slate-600"
+                          }`}
+                        >
+                          {d.charAt(0).toUpperCase() + d.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Card Style */}
+                  <div>
+                    <Label className="text-slate-300 text-sm font-medium mb-3 block">Card Style</Label>
+                    <div className="flex gap-2">
+                      {(["glass", "solid", "bordered"] as const).map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => setCardStyle(s)}
+                          className={`px-4 py-2 rounded-lg text-sm border transition-all ${
+                            config.cardStyle === s
+                              ? "border-blue-500 bg-blue-500/10 text-white"
+                              : "border-slate-700 text-slate-400 hover:border-slate-600"
+                          }`}
+                        >
+                          {s.charAt(0).toUpperCase() + s.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Animations */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-slate-300 text-sm font-medium">Animations</Label>
+                      <p className="text-xs text-slate-500">Enable hover effects and transitions</p>
+                    </div>
+                    <Switch
+                      checked={config.animations}
+                      onCheckedChange={setAnimations}
+                    />
                   </div>
                 </CardContent>
               </Card>
