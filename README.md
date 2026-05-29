@@ -16,6 +16,20 @@ The key idea: you paste any OpenAI-compatible API URL and key into Forge Studio,
 
 ## What It Actually Does
 
+### 0. AI Lab Hub — Unified Model Catalog
+
+The central command center for all AI models. One page replaces five: Model Manager, Model Explorer, Custom Providers, LLM Discoverer, and Inference Lab. Features:
+
+- **Unified model catalog** — all models from all sources in one searchable grid (cloud APIs, custom providers, local Ollama/llama.cpp/GGUF)
+- **Pool system** — Paid, Free, and Local pools with one-click filters
+- **Quick Add API Key** — paste any API key (DeepSeek, OpenAI, Groq, etc.), auto-detects provider and discovers models
+- **Local LLM scanner** — auto-detects Ollama models, llama.cpp processes, GGUF files, and HuggingFace cache
+- **Provider sidebar** — see all providers with status dots, model counts, and enable/disable
+- **Live model status** — online/offline/running indicators per model
+- **Built-in provider registry** — DeepSeek, OpenAI, Groq, Together, OpenRouter, Mistral, Gemini pre-configured
+
+Navigate to `/lab` or click "AI Lab Hub" in the sidebar.
+
 ### 1. LLM Proxy
 
 Forge Studio receives chat completion requests and routes them to whichever provider has the model you asked for. It supports:
@@ -299,6 +313,9 @@ Your App
   ▼
 Forge Studio (:5051)
   │
+  ├─ AI Lab Hub (/lab) — unified model catalog
+  │   └─ All models from: custom providers + LiteLLM + local scanners
+  │
   ├─ /v1/chat/completions (OpenAI-compatible)
   ├─ /api/stream/chat (SSE streaming)
   ├─ /api/trpc/* (tRPC for the UI)
@@ -319,16 +336,17 @@ You can use Forge Studio as:
 
 ## Database
 
-19 tables covering:
+21 tables covering:
 
 - Users, teams, organizations
 - API keys, virtual keys
 - Providers, custom providers
+- Unified resource catalog (model aggregation)
 - Request history, usage logs
 - Budget limits, audit logs
 - MCP servers, skills, agents
 - Guardrails, policies
-- System events (errors)
+- System events, webhooks, cache
 
 ---
 
@@ -336,13 +354,14 @@ You can use Forge Studio as:
 
 Most LLM tools do one thing: route requests. Forge Studio bundles the full lifecycle:
 
-- **Discovery**: Find and pull models from HuggingFace
-- **Configuration**: Add providers, set up routing
-- **Proxying**: Route requests with automatic fallback
-- **Monitoring**: See what's happening in real-time
-- **Budgeting**: Track and limit spending
-- **Building**: Create AI products with the Forge Builder
-- **Securing**: Guardrails, access control, audit logs
+- **AI Lab Hub**: Unified model catalog — one view for all models across cloud APIs, custom providers, local Ollama/llama.cpp, and GGUF files. Quick-add API keys from DeepSeek, OpenAI, Groq, and more.
+- **Discovery**: Find and pull models from HuggingFace. Auto-detect local LLMs (Ollama, llama.cpp, GGUF).
+- **Configuration**: Add providers, set up routing. Paste any OpenAI-compatible API key and it works.
+- **Proxying**: Route requests with automatic fallback and circuit breaker protection.
+- **Monitoring**: See what's happening in real-time with GPU stats, token throughput, and system telemetry.
+- **Budgeting**: Track and limit spending with per-team monthly budgets and virtual key rate limits.
+- **Building**: Create AI products with the Forge Builder — visual workflow designer with MCP tools.
+- **Securing**: Guardrails (PII detection, prompt injection blocking), access control, audit logs.
 
 Everything runs on your hardware. No data leaves your machine unless you configure a cloud provider.
 

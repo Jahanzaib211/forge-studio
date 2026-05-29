@@ -19,6 +19,7 @@ import { customProviderService } from "../services/custom_provider";
 import { directProxyChat } from "../services/direct_proxy";
 import { getDb } from "../db";
 import { providerService } from "../services/provider_service";
+import { getResourceCatalog } from "../services/resource_catalog";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -267,34 +268,33 @@ async function startServer() {
     }
   });
 
-  // Model list endpoint for OpenAI-compatible tools
+  // Model list endpoint for OpenAI-compatible tools — uses unified catalog
   app.get("/v1/models", async (_req, res) => {
-    const customModels: Array<{ id: string; object: string; owned_by?: string }> = [];
     try {
-      const providers = await customProviderService.list();
-      for (const p of providers) {
-        if (p.enabled !== 1) continue;
-        const models = p.models.split(",").map((m) => m.trim()).filter(Boolean);
-        for (const m of models) {
-          customModels.push({ id: m, object: "model", owned_by: p.name });
-        }
-      }
-    } catch {
-      // ignore
-    }
+      const catalog = await getResourceCatalog();
+      const data = catalog.models
+        .filter((m) => m.status !== "offline")
+        .map((m) => ({
+          id: m.id,
+          object: "model",
+          owned_by: m.providerName,
+          pool: m.pool,
+        }));
 
-    res.json({
-      object: "list",
-      data: [
-        { id: "forge-chat", object: "model" },
-        { id: "forge-coder", object: "model" },
-        { id: "forge-vision", object: "model" },
-        { id: "forge-fast", object: "model" },
-        { id: "forge-long-context", object: "model" },
-        { id: "forge-local", object: "model" },
-        ...customModels,
-      ],
-    });
+      res.json({ object: "list", data });
+    } catch {
+      res.json({
+        object: "list",
+        data: [
+          { id: "forge-chat", object: "model" },
+          { id: "forge-coder", object: "model" },
+          { id: "forge-vision", object: "model" },
+          { id: "forge-fast", object: "model" },
+          { id: "forge-long-context", object: "model" },
+          { id: "forge-local", object: "model" },
+        ],
+      });
+    }
   });
 
   // MCP server routes

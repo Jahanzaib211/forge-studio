@@ -42,11 +42,13 @@ import PromptLibrary from "./pages/PromptLibrary";
 import Benchmark from "./pages/Benchmark";
 import ProviderHealth from "./pages/ProviderHealth";
 import Webhooks from "./pages/Webhooks";
+import AILabHub from "./pages/AILabHub";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/lab" component={() => <DashboardLayout><AILabHub /></DashboardLayout>} />
       <Route path="/dashboard" component={() => <DashboardLayout><Dashboard /></DashboardLayout>} />
       <Route path="/inference" component={() => <DashboardLayout><InferenceLab /></DashboardLayout>} />
       <Route path="/explorer" component={() => <DashboardLayout><ModelExplorer /></DashboardLayout>} />

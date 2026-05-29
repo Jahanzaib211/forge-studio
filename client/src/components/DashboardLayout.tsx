@@ -79,6 +79,7 @@ const sidebarSections: Section[] = [
   {
     title: "AI GATEWAY",
     items: [
+      { icon: Cpu, label: "AI Lab Hub", path: "/lab" },
       { icon: Boxes, label: "Forge Builder", path: "/builder" },
       { icon: Key, label: "Virtual Keys", path: "/virtual-keys" },
       { icon: MessageSquare, label: "Playground", path: "/dashboard" },
