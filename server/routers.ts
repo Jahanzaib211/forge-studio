@@ -35,6 +35,16 @@ import {
   getModelHistory,
 } from "./services/analytics_service";
 
+import { systemRouter as systemMonitorRouter } from "./routers/system_router";
+import { virtualKeyRouter } from "./routers/virtual_key_router";
+import { mcpRouter } from "./routers/mcp_router";
+import { skillRouter } from "./routers/skill_router";
+import { guardrailRouter } from "./routers/guardrail_router";
+import { organizationRouter } from "./routers/organization_router";
+import { agentRouter } from "./routers/agent_router";
+import { settingsRouter } from "./routers/settings_router";
+import { usageRouter } from "./routers/usage_router";
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -418,6 +428,33 @@ export const appRouter = router({
         return await getModelHistory(input.model, input.limit);
       }),
   }),
+
+  // System Monitor (GPU, LLMs, PM2)
+  systemMonitor: systemMonitorRouter,
+
+  // Virtual Keys
+  virtualKeys: virtualKeyRouter,
+
+  // MCP Servers
+  mcp: mcpRouter,
+
+  // Skills
+  skills: skillRouter,
+
+  // Guardrails & Policies
+  guardrails: guardrailRouter,
+
+  // Organizations & Access Groups
+  organizations: organizationRouter,
+
+  // Agents
+  agents: agentRouter,
+
+  // Settings
+  settings: settingsRouter,
+
+  // Usage Logs
+  usage: usageRouter,
 });
 
 export type AppRouter = typeof appRouter;

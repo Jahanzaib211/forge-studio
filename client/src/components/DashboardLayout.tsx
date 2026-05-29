@@ -1,5 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,15 +21,104 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import {
+  Activity,
+  BarChart3,
+  BookOpen,
+  Brain,
+  Building2,
+  Cpu,
+  DollarSign,
+  FileText,
+  Globe,
+  Key,
+  Layers,
+  LayoutDashboard,
+  Lock,
+  LogOut,
+  MessageSquare,
+  PanelLeft,
+  Plug,
+  Search,
+  ScrollText,
+  Settings,
+  Shield,
+  ShieldAlert,
+  User,
+  Users,
+  Wrench,
+  Zap,
+} from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
+import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
+interface MenuItem {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  path: string;
+}
+
+interface Section {
+  title: string;
+  items: MenuItem[];
+}
+
+const sidebarSections: Section[] = [
+  {
+    title: "AI GATEWAY",
+    items: [
+      { icon: Key, label: "Virtual Keys", path: "/virtual-keys" },
+      { icon: MessageSquare, label: "Playground", path: "/dashboard" },
+      { icon: Layers, label: "Models + Endpoints", path: "/models" },
+      { icon: Brain, label: "Agentic", path: "/agentic" },
+      { icon: Plug, label: "MCP Servers", path: "/mcp-servers" },
+      { icon: Zap, label: "Skills", path: "/skills" },
+      { icon: Shield, label: "Guardrails", path: "/guardrails" },
+      { icon: FileText, label: "Policies", path: "/guardrails" },
+      { icon: Wrench, label: "Tools", path: "/tools-hub" },
+    ],
+  },
+  {
+    title: "OBSERVABILITY",
+    items: [
+      { icon: BarChart3, label: "Usage", path: "/usage" },
+      { icon: ScrollText, label: "Logs", path: "/logs" },
+      { icon: ShieldAlert, label: "Guardrails Monitor", path: "/guardrails-monitor" },
+    ],
+  },
+  {
+    title: "ACCESS CONTROL",
+    items: [
+      { icon: Users, label: "Teams", path: "/teams" },
+      { icon: User, label: "Internal Users", path: "/internal-users" },
+      { icon: Building2, label: "Organizations", path: "/organizations" },
+      { icon: Lock, label: "Access Groups", path: "/access-groups" },
+      { icon: DollarSign, label: "Budgets", path: "/budgets" },
+    ],
+  },
+  {
+    title: "SYSTEM",
+    items: [
+      { icon: Activity, label: "System Monitor", path: "/system-monitor" },
+      { icon: Settings, label: "Process Manager", path: "/process-manager" },
+      { icon: Search, label: "LLM Discoverer", path: "/llm-discoverer" },
+    ],
+  },
+  {
+    title: "DEVELOPER TOOLS",
+    items: [
+      { icon: BookOpen, label: "API Reference", path: "/api-reference" },
+      { icon: Globe, label: "AI Hub", path: "/ai-hub" },
+      { icon: Layers, label: "OpenAI Compatible", path: "/inference" },
+    ],
+  },
+  {
+    title: "SETTINGS",
+    items: [{ icon: Settings, label: "Settings", path: "/settings" }],
+  },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -53,7 +142,7 @@ export default function DashboardLayout({
   }, [sidebarWidth]);
 
   if (loading) {
-    return <DashboardLayoutSkeleton />
+    return <DashboardLayoutSkeleton />;
   }
 
   if (!user) {
@@ -65,7 +154,8 @@ export default function DashboardLayout({
               Sign in to continue
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
+              Access to this dashboard requires authentication. Continue to
+              launch the login flow.
             </p>
           </div>
           <Button
@@ -102,6 +192,138 @@ type DashboardLayoutContentProps = {
   setSidebarWidth: (width: number) => void;
 };
 
+function CollapsibleSection({
+  section,
+  location,
+  setLocation,
+  isCollapsed,
+}: {
+  section: Section;
+  location: string;
+  setLocation: (path: string) => void;
+  isCollapsed: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(() => {
+    return section.items.some((item) => item.path === location);
+  });
+
+  useEffect(() => {
+    if (section.items.some((item) => item.path === location)) {
+      setIsOpen(true);
+    }
+  }, [location, section.items]);
+
+  if (isCollapsed) {
+    return (
+      <SidebarMenu className="px-2 py-1">
+        {section.items.map((item) => {
+          const isActive = location === item.path;
+          return (
+            <SidebarMenuItem key={item.path}>
+              <SidebarMenuButton
+                isActive={isActive}
+                onClick={() => setLocation(item.path)}
+                tooltip={item.label}
+                className="h-9 transition-all font-normal"
+              >
+                <item.icon
+                  className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                />
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          );
+        })}
+      </SidebarMenu>
+    );
+  }
+
+  return (
+    <div className="mb-1">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500 hover:text-slate-400 transition-colors"
+      >
+        <span>{section.title}</span>
+        <svg
+          className={`h-3 w-3 transition-transform ${isOpen ? "rotate-90" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+      {isOpen && (
+        <SidebarMenu className="px-2 py-0.5">
+          {section.items.map((item) => {
+            const isActive = location === item.path;
+            return (
+              <SidebarMenuItem key={item.path}>
+                <SidebarMenuButton
+                  isActive={isActive}
+                  onClick={() => setLocation(item.path)}
+                  tooltip={item.label}
+                  className={`h-9 transition-all font-normal ${
+                    isActive
+                      ? "bg-blue-600/15 text-blue-400"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                  }`}
+                >
+                  <item.icon
+                    className={`h-4 w-4 ${isActive ? "text-blue-400" : ""}`}
+                  />
+                  <span className="text-sm">{item.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      )}
+    </div>
+  );
+}
+
+function SystemStatsBar() {
+  const statsQuery = trpc.systemMonitor.stats.useQuery(undefined, {
+    refetchInterval: 3000,
+  });
+  const stats = statsQuery.data;
+
+  if (!stats) return null;
+
+  const cpuPercent = Math.round(stats.cpu.totalUsage);
+  const ramPercent = Math.round(stats.memory.usedPercent);
+  const gpuPercent =
+    stats.gpu.length > 0
+      ? Math.round(
+          stats.gpu.reduce((sum, g) => sum + g.utilizationGpu, 0) /
+            stats.gpu.length
+        )
+      : null;
+
+  return (
+    <div className="px-3 py-2 border-t border-slate-800">
+      <div className="flex items-center gap-3 text-[10px] font-mono text-slate-500">
+        <div className="flex items-center gap-1">
+          <Cpu className="h-3 w-3" />
+          <span>CPU {cpuPercent}%</span>
+        </div>
+        {gpuPercent !== null && (
+          <div className="flex items-center gap-1">
+            <Activity className="h-3 w-3" />
+            <span>GPU {gpuPercent}%</span>
+          </div>
+        )}
+        <div className="flex items-center gap-1">
+          <Activity className="h-3 w-3" />
+          <span>RAM {ramPercent}%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DashboardLayoutContent({
   children,
   setSidebarWidth,
@@ -112,7 +334,6 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -125,7 +346,8 @@ function DashboardLayoutContent({
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return;
 
-      const sidebarLeft = sidebarRef.current?.getBoundingClientRect().left ?? 0;
+      const sidebarLeft =
+        sidebarRef.current?.getBoundingClientRect().left ?? 0;
       const newWidth = e.clientX - sidebarLeft;
       if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
         setSidebarWidth(newWidth);
@@ -151,12 +373,21 @@ function DashboardLayoutContent({
     };
   }, [isResizing, setSidebarWidth]);
 
+  const findCurrentLabel = (): string => {
+    for (const section of sidebarSections) {
+      for (const item of section.items) {
+        if (item.path === location) return item.label;
+      }
+    }
+    return "Menu";
+  };
+
   return (
     <>
       <div className="relative" ref={sidebarRef}>
         <Sidebar
           collapsible="icon"
-          className="border-r-0"
+          className="border-r-0 bg-slate-950"
           disableTransition={isResizing}
         >
           <SidebarHeader className="h-16 justify-center">
@@ -169,68 +400,74 @@ function DashboardLayoutContent({
                 <PanelLeft className="h-4 w-4 text-muted-foreground" />
               </button>
               {!isCollapsed ? (
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-semibold tracking-tight truncate">
-                    Navigation
-                  </span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <img
+                    src="https://avatars.githubusercontent.com/u/695416?v=4"
+                    alt="Avatar"
+                    className="h-10 w-10 rounded-full shrink-0 border border-slate-700"
+                  />
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-bold tracking-tight text-sm text-white truncate">
+                      FORGE STUDIO
+                    </span>
+                    <span className="text-[10px] text-slate-500 truncate">
+                      by Jahanzaib Ali
+                    </span>
+                  </div>
                 </div>
               ) : null}
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-0">
-            <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
-                const isActive = location === item.path;
-                return (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      onClick={() => setLocation(item.path)}
-                      tooltip={item.label}
-                      className={`h-10 transition-all font-normal`}
-                    >
-                      <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                      />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
+          <SidebarContent className="gap-0 py-2 overflow-y-auto">
+            {sidebarSections.map((section) => (
+              <CollapsibleSection
+                key={section.title}
+                section={section}
+                location={location}
+                setLocation={setLocation}
+                isCollapsed={isCollapsed}
+              />
+            ))}
           </SidebarContent>
 
-          <SidebarFooter className="p-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <Avatar className="h-9 w-9 border shrink-0">
-                    <AvatarFallback className="text-xs font-medium">
-                      {user?.name?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-medium truncate leading-none">
-                      {user?.name || "-"}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate mt-1.5">
-                      {user?.email || "-"}
-                    </p>
-                  </div>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  onClick={logout}
-                  className="cursor-pointer text-destructive focus:text-destructive"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarFooter>
+          <div className="border-t border-slate-800">
+            {!isCollapsed && <SystemStatsBar />}
+
+            <SidebarFooter className="p-3">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <Avatar className="h-9 w-9 border shrink-0">
+                      <AvatarImage src="https://avatars.githubusercontent.com/u/695416?v=4" />
+                      <AvatarFallback className="text-xs font-medium">
+                        {user?.name?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
+                      <p className="text-sm font-medium truncate leading-none text-white">
+                        {user?.name || "-"}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <span className="inline-flex items-center rounded-md bg-blue-600/20 px-1.5 py-0.5 text-[9px] font-medium text-blue-400 ring-1 ring-inset ring-blue-600/30">
+                          admin
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem
+                    onClick={logout}
+                    className="cursor-pointer text-destructive focus:text-destructive"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarFooter>
+          </div>
         </Sidebar>
         <div
           className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors ${isCollapsed ? "hidden" : ""}`}
@@ -250,7 +487,7 @@ function DashboardLayoutContent({
               <div className="flex items-center gap-3">
                 <div className="flex flex-col gap-1">
                   <span className="tracking-tight text-foreground">
-                    {activeMenuItem?.label ?? "Menu"}
+                    {findCurrentLabel()}
                   </span>
                 </div>
               </div>

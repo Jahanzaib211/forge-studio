@@ -36,8 +36,8 @@ interface ChatCompletionResponse {
 }
 
 const TASK_TYPE_MODEL_MAP: Record<string, string> = {
-  chat: "fast-70b",
-  coding: "coder",
+  chat: "mistral/codestral-latest",
+  coding: "mistral/codestral-latest",
   vision: "gemini-flash",
   fast: "fast-8b",
   long_context: "smart",

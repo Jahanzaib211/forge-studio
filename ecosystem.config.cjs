@@ -1,10 +1,25 @@
 module.exports = {
   apps: [
     {
+      name: "redis",
+      script: "redis-server",
+      args: "--port 6379 --daemonize no",
+      interpreter: "none",
+      autorestart: true,
+      watch: false,
+      max_restarts: 10,
+      restart_delay: 1000,
+      env: {
+        NODE_ENV: "development",
+      },
+    },
+    {
       name: "freeapi-forge",
       script: "pnpm",
       args: "dev",
       cwd: "/home/jahanzaib/freeapi-forge",
+      autorestart: true,
+      watch: false,
       env: {
         NODE_ENV: "development",
         PORT: 5051,
@@ -17,6 +32,8 @@ module.exports = {
       max_restarts: 10,
       restart_delay: 3000,
       exp_backoff_restart_delay: 100,
+      kill_timeout: 5000,
+      listen_timeout: 10000,
     },
   ],
 };
