@@ -20,6 +20,7 @@ import { directProxyChat } from "../services/direct_proxy";
 import { getDb } from "../db";
 import { providerService } from "../services/provider_service";
 import { getResourceCatalog } from "../services/resource_catalog";
+import { setupTerminalWebSocket } from "../routers/sandbox_router";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -372,6 +373,19 @@ async function startServer() {
   // WebSocket server for real-time system stats and error events
   const wss = new WebSocketServer({ server, path: "/ws" });
   startSystemMonitor(wss);
+
+  // Terminal WebSocket for sandbox shell
+  const termWss = new WebSocketServer({ noServer: true });
+  setupTerminalWebSocket(termWss);
+
+  server.on("upgrade", (request, socket, head) => {
+    const url = request.url || "";
+    if (url.startsWith("/ws/terminal")) {
+      termWss.handleUpgrade(request, socket, head, (ws) => {
+        termWss.emit("connection", ws, request);
+      });
+    }
+  });
 
   // Broadcast error events to all connected clients
   errorLogger.on("log", (event) => {

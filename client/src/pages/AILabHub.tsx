@@ -362,7 +362,7 @@ export default function AILabHub() {
                             variant="ghost"
                             size="sm"
                             className="h-7 text-xs"
-                            onClick={() => window.open(`/dashboard?model=${encodeURIComponent(m.id)}`, '_self')}
+                            onClick={() => handleTestModel(m)}
                           >
                             <Play className="h-3 w-3 mr-1" />
                             Chat

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import SandboxPanel from "@/components/hub/SandboxPanel";
 import {
   Blocks,
   ChevronUp,
@@ -38,6 +39,7 @@ import {
   GripVertical,
   X,
   TestTube,
+  Terminal,
   Eye,
   RefreshCw,
 } from "lucide-react";
@@ -350,6 +352,8 @@ export default function ForgeBuilder() {
   const [testQuery, setTestQuery] = useState("");
   const [testOutput, setTestOutput] = useState("");
   const [testRunning, setTestRunning] = useState(false);
+  const [sandboxOpen, setSandboxOpen] = useState(false);
+  const [sandboxCode, setSandboxCode] = useState("");
   const [copiedJson, setCopiedJson] = useState(false);
   const outputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -644,6 +648,14 @@ export default function ForgeBuilder() {
             {testRunning ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Play className="w-4 h-4 mr-1" />}
             Test
           </Button>
+          <Button
+            size="sm"
+            className="bg-cyan-600 hover:bg-cyan-700 text-white"
+            onClick={() => setSandboxOpen(true)}
+          >
+            <Terminal className="w-4 h-4 mr-1" />
+            Sandbox
+          </Button>
         </div>
       </div>
 
@@ -922,6 +934,11 @@ export default function ForgeBuilder() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Sandbox Panel */}
+      {sandboxOpen && (
+        <SandboxPanel onClose={() => setSandboxOpen(false)} initialCode={sandboxCode} />
+      )}
     </div>
   );
 }

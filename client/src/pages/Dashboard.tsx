@@ -141,6 +141,14 @@ export default function Dashboard() {
       <div className="max-w-[1800px] mx-auto">
         <div className="mb-8 flex items-center justify-between">
           <div>
+            <div className="flex items-center gap-2 mb-2">
+              <button
+                onClick={() => window.location.href = '/lab'}
+                className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-1"
+              >
+                ← Back to Hub
+              </button>
+            </div>
             <h1 className="text-5xl font-bold text-white mb-2 tracking-tight">Dashboard</h1>
             <p className="text-slate-400 text-lg">AI Lab Control Center • Live Analytics & Chat</p>
           </div>
