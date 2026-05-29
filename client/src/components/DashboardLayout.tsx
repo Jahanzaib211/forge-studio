@@ -77,65 +77,38 @@ interface Section {
 
 const sidebarSections: Section[] = [
   {
-    title: "AI GATEWAY",
+    title: "AI LAB",
     items: [
       { icon: Cpu, label: "AI Lab Hub", path: "/lab" },
-      { icon: Boxes, label: "Forge Builder", path: "/builder" },
-      { icon: Key, label: "Virtual Keys", path: "/virtual-keys" },
       { icon: MessageSquare, label: "Playground", path: "/dashboard" },
-      { icon: Layers, label: "Models + Endpoints", path: "/models" },
-      { icon: Brain, label: "Agentic", path: "/agentic" },
-      { icon: Plug, label: "MCP Servers", path: "/mcp-servers" },
-      { icon: Zap, label: "Skills", path: "/skills" },
+      { icon: Layers, label: "Inference Lab", path: "/inference" },
+      { icon: Boxes, label: "Forge Builder", path: "/builder" },
+      { icon: Brain, label: "Agents", path: "/agentic" },
+    ],
+  },
+  {
+    title: "SECURITY",
+    items: [
+      { icon: Key, label: "Virtual Keys", path: "/virtual-keys" },
       { icon: Shield, label: "Guardrails", path: "/guardrails" },
-      { icon: FileText, label: "Policies", path: "/guardrails" },
-      { icon: Wrench, label: "Tools", path: "/tools-hub" },
-      { icon: Plug, label: "Custom Providers", path: "/custom-providers" },
-      { icon: FileCode, label: "Prompt Library", path: "/prompts" },
-      { icon: GitCompare, label: "Model Benchmark", path: "/benchmark" },
-      { icon: HeartPulse, label: "Provider Health", path: "/provider-health" },
-      { icon: Webhook, label: "Webhooks", path: "/webhooks" },
+      { icon: Users, label: "Teams & Budgets", path: "/teams" },
     ],
   },
   {
     title: "OBSERVABILITY",
     items: [
-      { icon: BarChart3, label: "Usage", path: "/usage" },
-      { icon: ScrollText, label: "Logs", path: "/logs" },
-      { icon: AlertCircle, label: "Error Logs", path: "/error-logs" },
-      { icon: ShieldAlert, label: "Guardrails Monitor", path: "/guardrails-monitor" },
-    ],
-  },
-  {
-    title: "ACCESS CONTROL",
-    items: [
-      { icon: Users, label: "Teams", path: "/teams" },
-      { icon: User, label: "Internal Users", path: "/internal-users" },
-      { icon: Building2, label: "Organizations", path: "/organizations" },
-      { icon: Lock, label: "Access Groups", path: "/access-groups" },
-      { icon: DollarSign, label: "Budgets", path: "/budgets" },
-    ],
-  },
-  {
-    title: "SYSTEM",
-    items: [
       { icon: Activity, label: "System Monitor", path: "/system-monitor" },
-      { icon: Settings, label: "Process Manager", path: "/process-manager" },
-      { icon: Search, label: "LLM Discoverer", path: "/llm-discoverer" },
-      { icon: Brain, label: "HuggingFace Hub", path: "/huggingface" },
+      { icon: BarChart3, label: "Usage & Logs", path: "/usage" },
+      { icon: HeartPulse, label: "Providers", path: "/providers" },
     ],
   },
   {
-    title: "DEVELOPER TOOLS",
+    title: "DEVELOPER",
     items: [
+      { icon: Plug, label: "MCP Servers", path: "/mcp-servers" },
       { icon: BookOpen, label: "API Reference", path: "/api-reference" },
-      { icon: Globe, label: "AI Hub", path: "/ai-hub" },
-      { icon: Layers, label: "OpenAI Compatible", path: "/inference" },
+      { icon: Settings, label: "Settings", path: "/settings" },
     ],
-  },
-  {
-    title: "SETTINGS",
-    items: [{ icon: Settings, label: "Settings", path: "/settings" }],
   },
 ];
 

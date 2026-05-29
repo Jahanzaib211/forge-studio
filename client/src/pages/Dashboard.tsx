@@ -38,11 +38,11 @@ export default function Dashboard() {
   const providerPerfQuery = trpc.analytics.providerPerformance.useQuery(undefined, { refetchInterval: 10000 });
   const providersQuery = trpc.providers.status.useQuery(undefined, { refetchInterval: 3000 });
   const budgetQuery = trpc.budget.getMonthlySpend.useQuery({ teamId: "default" }, { refetchInterval: 5000 });
-  const modelsQuery = trpc.models.list.useQuery(undefined, { refetchInterval: 10000 });
+  const modelsQuery = trpc.catalog.getAll.useQuery(undefined, { refetchInterval: 10000 });
 
   const isLoading = liveStatsQuery.isLoading || hourlyQuery.isLoading || topModelsQuery.isLoading;
 
-  const models = modelsQuery.data || [];
+  const models = modelsQuery.data?.models || [];
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -305,7 +305,7 @@ export default function Dashboard() {
                       </SelectTrigger>
                       <SelectContent className="bg-slate-700 border-slate-600 max-h-48">
                         {models.map((m) => (
-                          <SelectItem key={m.name} value={m.name}>{m.name}</SelectItem>
+                          <SelectItem key={m.id} value={m.id}>{m.displayName}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
