@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 const APP_VERSION = "1.0.0";
 const APP_NAME = "Forge Studio";
 const APP_AUTHOR = "jahanzaib";
-const GITHUB_URL = "https://github.com/jahanzaib/freeapi-forge";
+const GITHUB_URL = "https://github.com/Jahanzaib211/forge-studio";
 
 interface AppSettings {
   name: string;

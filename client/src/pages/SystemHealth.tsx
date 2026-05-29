@@ -61,7 +61,7 @@ export default function SystemHealth() {
                 {health?.database || "Checking..."}
               </div>
               <div className="text-xs text-slate-500 mt-2">
-                Port 5434 • freeapi_forge
+                Port 5434 • forge_studio
               </div>
             </CardContent>
           </Card>
@@ -120,7 +120,7 @@ export default function SystemHealth() {
             <CardContent className="p-6 space-y-4">
               <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg">
                 <span className="text-sm text-slate-400">Database URL</span>
-                <span className="text-sm font-mono text-slate-300">postgresql://localhost:5434/freeapi_forge</span>
+                <span className="text-sm font-mono text-slate-300">postgresql://localhost:5434/forge_studio</span>
               </div>
               <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg">
                 <span className="text-sm text-slate-400">Redis URL</span>

@@ -15,26 +15,26 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - freeapi-network
+      - forge-network
 
   postgres:
     image: postgres:17
     container_name: forge-studio-postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-freeapi}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-freeapi_password}
+      POSTGRES_USER: ${POSTGRES_USER:-forge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-forge_password}
       POSTGRES_DB: ${POSTGRES_DB:-forge_studio}
     ports:
       - "5434:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-freeapi}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-forge}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - freeapi-network
+      - forge-network
 
   app:
     build:
@@ -44,7 +44,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5051
-      DATABASE_URL: postgresql://${POSTGRES_USER:-freeapi}:${POSTGRES_PASSWORD:-freeapi_password}@postgres:5432/${POSTGRES_DB:-forge_studio}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-forge}:${POSTGRES_PASSWORD:-forge_password}@postgres:5432/${POSTGRES_DB:-forge_studio}
       REDIS_URL: redis://redis:6379/1
       LITELLM_URL: ${LITELLM_URL:-http://host.docker.internal:5050}
       LITELLM_API_KEY: ${LITELLM_API_KEY:-sk-ai-lab-master-key}
@@ -63,7 +63,7 @@ services:
       retries: 3
       start_period: 40s
     networks:
-      - freeapi-network
+      - forge-network
     restart: unless-stopped
 
   ollama:
@@ -76,7 +76,7 @@ services:
     volumes:
       - ollama-data:/root/.ollama
     networks:
-      - freeapi-network
+      - forge-network
     restart: unless-stopped
     profiles:
       - with-ollama
@@ -90,5 +90,5 @@ volumes:
     driver: local
 
 networks:
-  freeapi-network:
+  forge-network:
     driver: bridge
