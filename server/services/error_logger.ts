@@ -1,5 +1,5 @@
 import { EventEmitter } from "events";
-import { lt } from "drizzle-orm";
+import { lt, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { systemEvents } from "../../drizzle/schema";
 
@@ -177,11 +177,18 @@ export class ErrorLogger extends EventEmitter {
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - olderThanDays);
 
+      const countResult = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(systemEvents)
+        .where(lt(systemEvents.createdAt, cutoff));
+      
+      const count = countResult[0]?.count ?? 0;
+
       await db
         .delete(systemEvents)
         .where(lt(systemEvents.createdAt, cutoff));
 
-      return 0;
+      return count;
     } catch (error) {
       console.error("[ErrorLogger] Failed to clear old events:", error);
       return 0;

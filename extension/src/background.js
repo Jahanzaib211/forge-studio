@@ -1,5 +1,5 @@
 /**
- * Background Service Worker for FreeAPI Forge Extension
+ * Background Service Worker for Forge Studio Extension
  * Handles message passing and API communication
  */
 

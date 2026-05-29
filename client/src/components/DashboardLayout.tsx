@@ -19,6 +19,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useTheme } from "@/contexts/ThemeContext";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
@@ -37,6 +38,7 @@ import {
   LayoutDashboard,
   Lock,
   LogOut,
+  Moon,
   MessageSquare,
   PanelLeft,
   Plug,
@@ -45,13 +47,15 @@ import {
   Settings,
   Shield,
   ShieldAlert,
+  Sun,
   User,
   Users,
   Wrench,
   Zap,
+  Boxes,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 
@@ -70,6 +74,7 @@ const sidebarSections: Section[] = [
   {
     title: "AI GATEWAY",
     items: [
+      { icon: Boxes, label: "Forge Builder", path: "/builder" },
       { icon: Key, label: "Virtual Keys", path: "/virtual-keys" },
       { icon: MessageSquare, label: "Playground", path: "/dashboard" },
       { icon: Layers, label: "Models + Endpoints", path: "/models" },
@@ -329,6 +334,7 @@ function DashboardLayoutContent({
   setSidebarWidth,
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -400,10 +406,10 @@ function DashboardLayoutContent({
                 <PanelLeft className="h-4 w-4 text-muted-foreground" />
               </button>
               {!isCollapsed ? (
-                <div className="flex items-center gap-3 min-w-0">
+                <Link href="/" className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity">
                   <img
                     src="https://avatars.githubusercontent.com/u/695416?v=4"
-                    alt="Avatar"
+                    alt="Forge Studio"
                     className="h-10 w-10 rounded-full shrink-0 border border-slate-700"
                   />
                   <div className="flex flex-col min-w-0">
@@ -414,7 +420,7 @@ function DashboardLayoutContent({
                       by Jahanzaib Ali
                     </span>
                   </div>
-                </div>
+                </Link>
               ) : null}
             </div>
           </SidebarHeader>
@@ -457,6 +463,13 @@ function DashboardLayoutContent({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem
+                    onClick={toggleTheme}
+                    className="cursor-pointer"
+                  >
+                    {theme === "dark" ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+                    <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={logout}
                     className="cursor-pointer text-destructive focus:text-destructive"

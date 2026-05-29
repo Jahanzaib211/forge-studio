@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "FreeAPI Forge",
+  "name": "Forge Studio",
   "version": "1.0.0",
   "description": "Intelligent LLM routing directly from your browser",
   "permissions": [
@@ -13,7 +13,7 @@
   ],
   "action": {
     "default_popup": "src/popup.html",
-    "default_title": "FreeAPI Forge"
+    "default_title": "Forge Studio"
   },
   "background": {
     "service_worker": "src/background.js"

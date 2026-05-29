@@ -33,6 +33,7 @@ import SkillsHub from "./pages/SkillsHub";
 import SystemMonitor from "./pages/SystemMonitor";
 import ProcessManager from "./pages/ProcessManager";
 import LLMDiscoverer from "./pages/LLMDiscoverer";
+import ForgeBuilder from "./pages/ForgeBuilder";
 
 function Router() {
   return (
@@ -66,6 +67,7 @@ function Router() {
       <Route path="/ai-hub" component={() => <DashboardLayout><AIHub /></DashboardLayout>} />
       <Route path="/settings" component={() => <DashboardLayout><Settings /></DashboardLayout>} />
       <Route path="/agentic" component={() => <DashboardLayout><Agentic /></DashboardLayout>} />
+      <Route path="/builder" component={() => <DashboardLayout><ForgeBuilder /></DashboardLayout>} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
@@ -75,7 +77,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark">
+      <ThemeProvider defaultTheme="dark" switchable>
         <TooltipProvider>
           <Toaster />
           <Router />

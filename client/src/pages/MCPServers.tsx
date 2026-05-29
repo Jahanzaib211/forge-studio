@@ -23,8 +23,10 @@ import {
   Copy,
   TestTube,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 function StatusBadge({ status }: { status: string }) {
   if (status === "connected")
@@ -78,6 +80,13 @@ export default function MCPServers() {
       setShowAdd(false);
       setNewName("");
       setNewUrl("");
+    },
+  });
+
+  const deleteMut = trpc.mcp.delete.useMutation({
+    onSuccess: () => {
+      utils.mcp.list.invalidate();
+      toast.success("Server deleted");
     },
   });
 
@@ -141,10 +150,25 @@ export default function MCPServers() {
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="flex items-center justify-between">
-                  <TransportBadge type={server.transport} />
-                  <span className="text-xs text-slate-400">
-                    {server.toolCount || 0} tools
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <TransportBadge type={server.transport} />
+                    <span className="text-xs text-slate-400">
+                      {server.toolCount || 0} tools
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm("Delete this MCP server?")) {
+                        deleteMut.mutate({ id: server.id });
+                      }
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
                 {server.url && (
                   <p className="text-[10px] text-slate-500 mt-2 truncate">{server.url}</p>

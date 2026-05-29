@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import bcrypt from "bcrypt";
-import { eq, and, isNull, gt, sql } from "drizzle-orm";
+import { eq, and, isNull, or, gt, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { virtualKeys } from "../../drizzle/schema";
 
@@ -194,7 +194,7 @@ export class VirtualKeyService {
       .where(
         and(
           eq(virtualKeys.enabled, 1),
-          isNull(virtualKeys.expiresAt)
+          or(isNull(virtualKeys.expiresAt), gt(virtualKeys.expiresAt, new Date()))
         )
       );
 

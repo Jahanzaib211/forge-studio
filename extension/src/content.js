@@ -1,5 +1,5 @@
 /**
- * Content Script for FreeAPI Forge Extension
+ * Content Script for Forge Studio Extension
  * Runs on web pages to provide context and integration
  */
 

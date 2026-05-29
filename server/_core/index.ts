@@ -9,6 +9,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { handleStreamChat } from "../services/stream_handler";
 import { startSystemMonitor } from "../services/system_monitor";
+import { mcpRouter } from "../services/mcp_server";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -148,28 +149,8 @@ async function startServer() {
     });
   });
 
-  // MCP SSE endpoint
-  app.get("/mcp/sse", (req, res) => {
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.flushHeaders();
-
-    const sendEvent = (eventName: string, data: unknown) => {
-      res.write(`event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`);
-    };
-
-    sendEvent("connected", {
-      protocolVersion: "2024-11-05",
-      capabilities: { tools: {}, resources: {} },
-      serverInfo: { name: "forge-studio", version: "3.0.0" },
-    });
-
-    req.on("close", () => {
-      console.log("[MCP] SSE client disconnected");
-    });
-  });
+  // MCP server routes
+  app.use(mcpRouter);
 
   // API docs endpoint
   app.get("/api-docs", (_req, res) => {

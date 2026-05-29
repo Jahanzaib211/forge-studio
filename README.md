@@ -1,8 +1,8 @@
-# FreeAPI Forge - AI Lab Control Center
+# Forge Studio — AI Lab Control Center
 
 A production-grade, AI lab-level LLM routing platform with intelligent provider selection, budget tracking, circuit breaking, and a companion browser extension. Built with React 19, Express 4, tRPC 11, PostgreSQL, and Redis.
 
-**FreeAPI Forge** routes API requests across multiple free-tier LLM providers (Groq, Gemini, Mistral, Cerebras, SambaNova, Cohere, OpenRouter, Cloudflare) through LiteLLM proxy with automatic failover, circuit breaking, and cost optimization.
+**Forge Studio** routes API requests across multiple free-tier LLM providers (Groq, Gemini, Mistral, Cerebras, SambaNova, Cohere, OpenRouter, Cloudflare) through LiteLLM proxy with automatic failover, circuit breaking, and cost optimization.
 
 ---
 
@@ -31,7 +31,7 @@ A production-grade, AI lab-level LLM routing platform with intelligent provider 
 
 ```
 Browser Extension ──┐
-                    ├──→ FreeAPI Forge (port 5051) ──┬──→ LiteLLM Proxy (5050) ──→ 20+ models
+                    ├──→ Forge Studio (port 5051) ──┬──→ LiteLLM Proxy (5050) ──→ 20+ models
 React UI ───────────┘                                ├──→ PostgreSQL (5434/freeapi_forge)
                                                      └──→ Redis (6379/1) circuit breaker
 ```
@@ -88,7 +88,7 @@ pm2 start ecosystem.config.cjs
 pm2 save
 
 # View logs
-pm2 logs freeapi-forge
+pm2 logs forge-studio
 ```
 
 ---
@@ -231,7 +231,7 @@ docker-compose up -d
 ```
 
 The docker-compose includes:
-- FreeAPI Forge app
+- Forge Studio app
 - Redis 7
 - MySQL 8 (can be swapped for PostgreSQL)
 - Optional Ollama for local LLM fallback
@@ -354,7 +354,7 @@ MIT License - See LICENSE file for details
 
 For issues, feature requests, or questions:
 - Check the System Health page at `/health`
-- Review logs: `pm2 logs freeapi-forge`
+- Review logs: `pm2 logs forge-studio`
 - Check LiteLLM proxy: `http://localhost:5050/health`
 
 ---

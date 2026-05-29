@@ -136,4 +136,4 @@ messageInput.addEventListener('keydown', (e) => {
 });
 
 // Initial message
-addMessage('Welcome to FreeAPI Forge! Configure your API key in settings to get started.', 'assistant');
+addMessage('Welcome to Forge Studio! Configure your API key in settings to get started.', 'assistant');

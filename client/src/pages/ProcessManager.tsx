@@ -27,6 +27,11 @@ export default function ProcessManager() {
   const [logLines, setLogLines] = useState(50);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
+  const logsQuery = trpc.systemMonitor.pm2.logs.useQuery(
+    { name: selectedLog || "", lines: logLines },
+    { enabled: !!selectedLog }
+  );
+
   const listQuery = trpc.systemMonitor.pm2.list.useQuery(undefined, {
     refetchInterval: 3000,
   });
@@ -220,7 +225,13 @@ export default function ProcessManager() {
               <span className="text-xs text-slate-400">lines</span>
             </div>
             <div className="bg-slate-900 rounded-lg p-4 max-h-[50vh] overflow-auto font-mono text-xs text-slate-300">
-              <p className="text-slate-500">Log output would appear here from trpc.system.pm2.logs</p>
+              {logsQuery.isLoading ? (
+                <p className="text-slate-500">Loading logs...</p>
+              ) : logsQuery.data && logsQuery.data.length > 0 ? (
+                <pre className="whitespace-pre-wrap">{logsQuery.data.map((log: any) => log.message).join("\n")}</pre>
+              ) : (
+                <p className="text-slate-500">No logs available. Select a process and click View Logs.</p>
+              )}
             </div>
           </DialogContent>
         </Dialog>

@@ -56,7 +56,7 @@ export default function Settings() {
   const [activeSection, setActiveSection] = useState("general");
   const [saving, setSaving] = useState(false);
 
-  const [appName, setAppName] = useState("FreeAPI Forge");
+  const [appName, setAppName] = useState("Forge Studio");
   const [appVersion, setAppVersion] = useState("1.0.0");
   const [logoUrl, setLogoUrl] = useState("");
   const [theme, setTheme] = useState("dark");

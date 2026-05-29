@@ -40,7 +40,7 @@ function createAdminContext(): TrpcContext {
   });
 }
 
-describe('FreeAPI Forge API Tests', () => {
+describe('Forge Studio API Tests', () => {
   let caller: ReturnType<typeof appRouter.createCaller>;
   let adminCaller: ReturnType<typeof appRouter.createCaller>;
 

@@ -12,6 +12,14 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
+function formatBytes(bytes: number): string {
+  if (!bytes || bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+}
+
 function ModelCard({
   model,
   onRegister,
@@ -42,7 +50,7 @@ function ModelCard({
         {model.size && (
           <div className="flex justify-between">
             <span className="text-[10px] text-slate-400">Size</span>
-            <span className="text-[10px] text-slate-300">{model.size}</span>
+            <span className="text-[10px] text-slate-300">{formatBytes(model.size)}</span>
           </div>
         )}
         {model.format && (
@@ -60,7 +68,7 @@ function ModelCard({
         {model.fileSize && (
           <div className="flex justify-between">
             <span className="text-[10px] text-slate-400">File Size</span>
-            <span className="text-[10px] text-slate-300">{model.fileSize}</span>
+            <span className="text-[10px] text-slate-300">{formatBytes(model.fileSize)}</span>
           </div>
         )}
         {model.estimatedVRAM && (
@@ -82,7 +90,7 @@ function ModelCard({
             Register to LiteLLM
           </Button>
         )}
-        {onLoad && model.source === "Ollama" && (
+        {onLoad && model.source === "ollama" && (
           <Button
             size="sm"
             className="h-7 text-[10px] bg-blue-600 hover:bg-blue-700 text-white"
@@ -98,14 +106,14 @@ function ModelCard({
 }
 
 export default function LLMDiscoverer() {
-  const { data: llms, isLoading } = trpc.systemMonitor.llms.useQuery(undefined, {
+  const { data: llms, isLoading, refetch } = trpc.systemMonitor.llms.useQuery(undefined, {
     refetchInterval: 10000,
   });
 
-  const ollamaModels = llms?.filter((m: any) => m.source === "Ollama") || [];
-  const llamaCppModels = llms?.filter((m: any) => m.source === "llama.cpp") || [];
-  const ggufFiles = llms?.filter((m: any) => m.source === "GGUF") || [];
-  const hfCache = llms?.filter((m: any) => m.source === "HuggingFace") || [];
+  const ollamaModels = llms?.filter((m: any) => m.source === "ollama") || [];
+  const llamaCppModels = llms?.filter((m: any) => m.source === "llama-cpp") || [];
+  const ggufFiles = llms?.filter((m: any) => m.source === "gguf") || [];
+  const hfCache = llms?.filter((m: any) => m.source === "huggingface") || [];
 
   const groups = [
     { title: "Ollama", icon: Brain, models: ollamaModels, color: "text-blue-400" },
@@ -129,7 +137,7 @@ export default function LLMDiscoverer() {
           <Button
             variant="outline"
             className="border-slate-600 text-slate-300 hover:bg-slate-700"
-            onClick={() => {}}
+            onClick={() => refetch()}
           >
             <RefreshCw className="w-4 h-4 mr-2" />
             Scan
@@ -156,7 +164,7 @@ export default function LLMDiscoverer() {
                         key={`${model.name}-${i}`}
                         model={model}
                         onRegister={() => {}}
-                        onLoad={group.title === "Ollama" ? () => {} : undefined}
+                        onLoad={group.title === "Ollama" ? () => alert(`Use: ollama pull ${model.name}`) : undefined}
                       />
                     ))}
                   </div>
