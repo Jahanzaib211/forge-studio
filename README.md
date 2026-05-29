@@ -200,8 +200,8 @@ Configure the application:
 
 ```bash
 # Clone
-git clone https://github.com/Jahanzaib211/freeapi-forge.git
-cd freeapi-forge
+git clone https://github.com/Jahanzaib211/forge-studio.git
+cd forge-studio
 
 # Install
 pnpm install
@@ -225,8 +225,8 @@ Open http://localhost:5051/
 
 ```bash
 # 1. Clone
-git clone https://github.com/Jahanzaib211/freeapi-forge.git
-cd freeapi-forge
+git clone https://github.com/Jahanzaib211/forge-studio.git
+cd forge-studio
 
 # 2. Install
 pnpm install
@@ -354,6 +354,27 @@ Most LLM tools do one thing: route requests. Forge Studio bundles the full lifec
 - **Securing**: Guardrails, access control, audit logs
 
 Everything runs on your hardware. No data leaves your machine unless you configure a cloud provider.
+
+---
+
+## Powering Forge Studio with Your Own API Key
+
+Forge Studio is a proxy. It doesn't have its own AI models. Instead, it uses whatever API keys you configure to power its features:
+
+**Chat and Inference** — Add an OpenAI, Anthropic, Groq, or any OpenAI-compatible API key in Custom Providers. Every chat completion, inference lab test, and Forge Builder workflow runs through your configured providers. Your data stays between you and your chosen provider.
+
+**System Features (No External API Needed)** — These work entirely locally:
+- System Monitor (CPU/GPU/RAM)
+- Process Manager (PM2)
+- LLM Discoverer (Ollama, llama.cpp, GGUF detection)
+- HuggingFace Hub (model search, hardware check, download)
+- Budget tracking, audit logs, access control
+
+**Guardrails** — PII detection, injection blocking, and toxicity filtering run client-side in the browser. No external API call needed.
+
+**Forge Builder** — The workflow builder sends test queries through the same proxy. Use whichever provider you've configured.
+
+The architecture: your API key goes into Forge Studio, Forge Studio routes requests, you see the response. Forge Studio never stores your prompts or responses beyond what's needed for the request log.
 
 ---
 

@@ -33,13 +33,18 @@ export class CustomProviderService {
   async add(input: AddProviderInput): Promise<{ provider: CustomProvider; models: string[] }> {
     const normalizedUrl = input.apiUrl.replace(/\/+$/, "");
 
-    const models = await this.fetchModels(normalizedUrl, input.apiKey);
+    let models = await this.fetchModels(normalizedUrl, input.apiKey);
 
-    if (models.length === 0) {
-      throw new Error("No models found at this endpoint. Verify the URL and API key.");
+    // If auto-discovery fails, use manually provided models
+    if (models.length === 0 && input.models) {
+      models = input.models.split(",").map(m => m.trim()).filter(Boolean);
     }
 
-    const modelString = input.models || models.join(",");
+    if (models.length === 0) {
+      throw new Error("No models found. Add models manually (comma-separated) or verify the endpoint supports /v1/models.");
+    }
+
+    const modelString = models.join(",");
 
     const db = await getDb();
     if (!db) throw new Error("Database not available");

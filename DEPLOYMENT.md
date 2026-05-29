@@ -12,8 +12,8 @@ The fastest way to run Forge Studio:
 ### Steps
 
 1. Clone and configure:
-   git clone https://github.com/Jahanzaib211/freeapi-forge.git
-   cd freeapi-forge
+   git clone https://github.com/Jahanzaib211/forge-studio.git
+   cd forge-studio
    cp .env.example .env
 
 2. Start everything:

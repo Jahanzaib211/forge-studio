@@ -16,6 +16,7 @@ export default function CustomProviders() {
   const [discoveredModels, setDiscoveredModels] = useState<string[]>([]);
   const [testingId, setTestingId] = useState<number | null>(null);
   const [testResults, setTestResults] = useState<Record<number, { success: boolean; latencyMs: number; response?: string; error?: string }>>({});
+  const [manualModels, setManualModels] = useState("");
 
   const providersQuery = trpc.customProviders.list.useQuery(undefined, { refetchInterval: 10000 });
   const addMutation = trpc.customProviders.add.useMutation();
@@ -56,11 +57,14 @@ export default function CustomProviders() {
       return;
     }
     try {
+      const modelsToSend = discoveredModels.length > 0 
+        ? discoveredModels.join(",") 
+        : manualModels || undefined;
       const result = await addMutation.mutateAsync({
         name,
         apiUrl,
         apiKey,
-        models: discoveredModels.length > 0 ? discoveredModels.join(",") : undefined,
+        models: modelsToSend,
       });
       toast.success(`Provider "${name}" added with ${result.models.length} model(s)`);
       setName("");
@@ -215,6 +219,19 @@ export default function CustomProviders() {
                 Add Provider
               </Button>
             </div>
+
+            {discoveredModels.length === 0 && (
+              <div>
+                <label className="text-sm text-slate-400 mb-1 block">Or enter models manually (comma-separated)</label>
+                <Input
+                  value={manualModels}
+                  onChange={(e) => setManualModels(e.target.value)}
+                  placeholder="claude-3-opus, claude-3-sonnet, gpt-4"
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+                <p className="text-xs text-slate-500 mt-1">Use this if auto-detect fails. Enter model IDs exactly as the provider expects.</p>
+              </div>
+            )}
 
             {discoveredModels.length > 0 && (
               <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">

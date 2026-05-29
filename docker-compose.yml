@@ -3,7 +3,7 @@ version: '3.8'
 services:
   redis:
     image: redis:7-alpine
-    container_name: freeapi-forge-redis
+    container_name: forge-studio-redis
     ports:
       - "6379:6379"
     volumes:
@@ -19,11 +19,11 @@ services:
 
   postgres:
     image: postgres:17
-    container_name: freeapi-forge-postgres
+    container_name: forge-studio-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-freeapi}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-freeapi_password}
-      POSTGRES_DB: ${POSTGRES_DB:-freeapi_forge}
+      POSTGRES_DB: ${POSTGRES_DB:-forge_studio}
     ports:
       - "5434:5432"
     volumes:
@@ -40,11 +40,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: freeapi-forge-app
+    container_name: forge-studio-app
     environment:
       NODE_ENV: production
       PORT: 5051
-      DATABASE_URL: postgresql://${POSTGRES_USER:-freeapi}:${POSTGRES_PASSWORD:-freeapi_password}@postgres:5432/${POSTGRES_DB:-freeapi_forge}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-freeapi}:${POSTGRES_PASSWORD:-freeapi_password}@postgres:5432/${POSTGRES_DB:-forge_studio}
       REDIS_URL: redis://redis:6379/1
       LITELLM_URL: ${LITELLM_URL:-http://host.docker.internal:5050}
       LITELLM_API_KEY: ${LITELLM_API_KEY:-sk-ai-lab-master-key}
@@ -68,7 +68,7 @@ services:
 
   ollama:
     image: ollama/ollama:latest
-    container_name: freeapi-forge-ollama
+    container_name: forge-studio-ollama
     environment:
       OLLAMA_HOST: 0.0.0.0:11434
     ports:

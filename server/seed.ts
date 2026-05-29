@@ -8,7 +8,7 @@ async function seed() {
 
   await sql`
     INSERT INTO users ("openId", name, email, "loginMethod", role)
-    VALUES ('local-dev-user', 'Local Developer', 'dev@freeapi-forge.local', 'mock', 'admin')
+    VALUES ('local-dev-user', 'Local Developer', 'dev@forge-studio.local', 'mock', 'admin')
     ON CONFLICT ("openId") DO NOTHING
   `;
   console.log("✓ Default admin user created");
