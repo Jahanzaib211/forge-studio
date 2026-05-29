@@ -44,6 +44,10 @@ import { organizationRouter } from "./routers/organization_router";
 import { agentRouter } from "./routers/agent_router";
 import { settingsRouter } from "./routers/settings_router";
 import { usageRouter } from "./routers/usage_router";
+import { customProviderRouter } from "./routers/custom_provider_router";
+import { huggingfaceRouter } from "./routers/huggingface_router";
+import { customProviderService } from "./services/custom_provider";
+import { directProxyChat } from "./services/direct_proxy";
 
 export const appRouter = router({
   system: systemRouter,
@@ -87,13 +91,59 @@ export const appRouter = router({
         }
 
         const startTime = Date.now();
-        const response = await llmRouter.complete({
-          messages: input.messages,
-          taskType: input.taskType,
-          maxTokens: input.maxTokens,
-          temperature: input.temperature,
-          teamId: input.teamId,
-        });
+
+        // Check if any model in the messages matches a custom provider
+        let response;
+        let customModel = input.messages[0]?.content ? null : null;
+
+        // Try to find a custom provider by checking the model from taskType mapping
+        const taskModelMap: Record<string, string> = {
+          chat: "fast-70b",
+          coding: "coder",
+          vision: "gemini-flash",
+          fast: "fast-8b",
+          long_context: "smart",
+          local: "qwen-moe",
+        };
+        const candidateModel = taskModelMap[input.taskType || "chat"] || "fast-70b";
+        const customProvider = await customProviderService.findProviderForModel(candidateModel);
+
+        if (customProvider) {
+          try {
+            const result = await directProxyChat({
+              messages: input.messages,
+              model: candidateModel,
+              apiUrl: customProvider.apiUrl,
+              apiKey: customProvider.apiKey,
+              maxTokens: input.maxTokens,
+              temperature: input.temperature,
+              stream: false,
+            });
+
+            response = {
+              id: result.id || `msg_${Date.now()}`,
+              object: result.object || "chat.completion",
+              created: result.created || Math.floor(Date.now() / 1000),
+              model: result.model || candidateModel,
+              provider: `custom:${customProvider.name}`,
+              choices: result.choices || [],
+              usage: result.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+            };
+          } catch (err: any) {
+            console.error(`[CustomProvider] ${customProvider.name} failed:`, err.message);
+            // Fall through to LiteLLM
+          }
+        }
+
+        if (!response) {
+          response = await llmRouter.complete({
+            messages: input.messages,
+            taskType: input.taskType,
+            maxTokens: input.maxTokens,
+            temperature: input.temperature,
+            teamId: input.teamId,
+          });
+        }
 
         const latencyMs = Date.now() - startTime;
         const costUsd = (response.usage.total_tokens / 1000000) * 0.0001;
@@ -455,6 +505,12 @@ export const appRouter = router({
 
   // Usage Logs
   usage: usageRouter,
+
+  // Custom Providers (Paste-Any-API)
+  customProviders: customProviderRouter,
+
+  // HuggingFace Model Hub
+  huggingface: huggingfaceRouter,
 });
 
 export type AppRouter = typeof appRouter;

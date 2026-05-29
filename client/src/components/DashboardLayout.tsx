@@ -25,6 +25,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
 import {
   Activity,
+  AlertCircle,
   BarChart3,
   BookOpen,
   Brain,
@@ -84,6 +85,7 @@ const sidebarSections: Section[] = [
       { icon: Shield, label: "Guardrails", path: "/guardrails" },
       { icon: FileText, label: "Policies", path: "/guardrails" },
       { icon: Wrench, label: "Tools", path: "/tools-hub" },
+      { icon: Plug, label: "Custom Providers", path: "/custom-providers" },
     ],
   },
   {
@@ -91,6 +93,7 @@ const sidebarSections: Section[] = [
     items: [
       { icon: BarChart3, label: "Usage", path: "/usage" },
       { icon: ScrollText, label: "Logs", path: "/logs" },
+      { icon: AlertCircle, label: "Error Logs", path: "/error-logs" },
       { icon: ShieldAlert, label: "Guardrails Monitor", path: "/guardrails-monitor" },
     ],
   },
@@ -110,6 +113,7 @@ const sidebarSections: Section[] = [
       { icon: Activity, label: "System Monitor", path: "/system-monitor" },
       { icon: Settings, label: "Process Manager", path: "/process-manager" },
       { icon: Search, label: "LLM Discoverer", path: "/llm-discoverer" },
+      { icon: Brain, label: "HuggingFace Hub", path: "/huggingface" },
     ],
   },
   {

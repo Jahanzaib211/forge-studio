@@ -530,6 +530,11 @@ export default function Home() {
         <div className="text-center text-slate-500 text-sm">
           <p>Forge Studio v3.0.0 · github.com/Jahanzaib211</p>
           <p className="mt-2">LiteLLM: :5050 · API: :5051 · llama.cpp: :8081 · Ollama: :11434</p>
+          <p className="mt-2">
+            <a href="https://www.alilabsx.com" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors">
+              www.alilabsx.com
+            </a>
+          </p>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 # Forge Studio — Monster AI Lab Control Center
 
-**Made by Jahanzaib Ali** | [github.com/Jahanzaib211](https://github.com/Jahanzaib211)
+**Made by Jahanzaib Ali** | [github.com/Jahanzaib211](https://github.com/Jahanzaib211) | [www.alilabsx.com](https://www.alilabsx.com)
 
 A production-grade, AI lab-level LLM routing platform with intelligent provider selection, budget tracking, circuit breaking, MCP integration, skills system, system monitoring, and a Manus/Genspark-style product builder. Built with React 19, Express 4, tRPC 11, PostgreSQL, Redis, and WebSocket.
 

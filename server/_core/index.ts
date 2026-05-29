@@ -10,6 +10,9 @@ import { serveStatic, setupVite } from "./vite";
 import { handleStreamChat } from "../services/stream_handler";
 import { startSystemMonitor } from "../services/system_monitor";
 import { mcpRouter } from "../services/mcp_server";
+import { errorLogger } from "../services/error_logger";
+import { customProviderService } from "../services/custom_provider";
+import { directProxyChat } from "../services/direct_proxy";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -47,6 +50,10 @@ async function startServer() {
     ) => {
       console.error(`[ERROR] ${new Date().toISOString()}:`, err.message);
       console.error(err.stack);
+      errorLogger.error("express.global", "Unhandled Express error", err, {
+        path: _req.path,
+        method: _req.method,
+      });
       res.status(500).json({ error: "Internal server error" });
     }
   );
@@ -92,6 +99,42 @@ async function startServer() {
       };
       const taskType = modelTaskMap[model?.toLowerCase()] || "chat";
 
+      // Check custom providers first (standalone mode)
+      const customProvider = await customProviderService.findProviderForModel(model || "fast-70b");
+      if (customProvider) {
+        try {
+          const result = await directProxyChat({
+            messages: messages || [],
+            model: model || "fast-70b",
+            apiUrl: customProvider.apiUrl,
+            apiKey: customProvider.apiKey,
+            maxTokens: req.body.max_tokens || 1024,
+            temperature: req.body.temperature || 0.7,
+            stream: false,
+          });
+
+          res.json({
+            id: result.id || "forge-" + Date.now(),
+            object: "chat.completion",
+            created: result.created || Date.now(),
+            model: result.model || model || "forge-chat",
+            choices: result.choices || [
+              {
+                index: 0,
+                message: { role: "assistant", content: "" },
+                finish_reason: "stop",
+              },
+            ],
+            usage: result.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+          });
+          return;
+        } catch (err: any) {
+          console.error(`[CustomProvider] ${customProvider.name} failed:`, err.message);
+          // Fall through to LiteLLM
+        }
+      }
+
+      // Fall back to LiteLLM
       const response = await fetch(
         `http://localhost:${port}/api/trpc/chat.complete`,
         {
@@ -135,7 +178,21 @@ async function startServer() {
   });
 
   // Model list endpoint for OpenAI-compatible tools
-  app.get("/v1/models", (_req, res) => {
+  app.get("/v1/models", async (_req, res) => {
+    const customModels: Array<{ id: string; object: string; owned_by?: string }> = [];
+    try {
+      const providers = await customProviderService.list();
+      for (const p of providers) {
+        if (p.enabled !== 1) continue;
+        const models = p.models.split(",").map((m) => m.trim()).filter(Boolean);
+        for (const m of models) {
+          customModels.push({ id: m, object: "model", owned_by: p.name });
+        }
+      }
+    } catch {
+      // ignore
+    }
+
     res.json({
       object: "list",
       data: [
@@ -145,6 +202,7 @@ async function startServer() {
         { id: "forge-fast", object: "model" },
         { id: "forge-long-context", object: "model" },
         { id: "forge-local", object: "model" },
+        ...customModels,
       ],
     });
   });
@@ -221,9 +279,19 @@ async function startServer() {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
-  // WebSocket server for real-time system stats
+  // WebSocket server for real-time system stats and error events
   const wss = new WebSocketServer({ server, path: "/ws" });
   startSystemMonitor(wss);
+
+  // Broadcast error events to all connected clients
+  errorLogger.on("log", (event) => {
+    const data = JSON.stringify({ type: "system_event", data: event });
+    wss.clients.forEach((client) => {
+      if (client.readyState === 1) {
+        client.send(data);
+      }
+    });
+  });
 
   wss.on("connection", (ws) => {
     console.log("[WS] Client connected");

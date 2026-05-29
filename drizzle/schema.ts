@@ -253,3 +253,17 @@ export const systemEvents = pgTable("systemEvents", {
 
 export type SystemEvent = typeof systemEvents.$inferSelect;
 export type InsertSystemEvent = typeof systemEvents.$inferInsert;
+
+// Custom Providers (Paste-Any-API)
+export const customProviders = pgTable("customProviders", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar("name", { length: 255 }).notNull(),
+  apiUrl: varchar("apiUrl", { length: 1024 }).notNull(),
+  apiKey: varchar("apiKey", { length: 1024 }).notNull(),
+  models: text("models").notNull(),
+  enabled: integer("enabled").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CustomProvider = typeof customProviders.$inferSelect;
+export type InsertCustomProvider = typeof customProviders.$inferInsert;

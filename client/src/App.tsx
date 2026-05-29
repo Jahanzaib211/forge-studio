@@ -22,7 +22,9 @@ import AIHub from "./pages/AIHub";
 import APIReference from "./pages/APIReference";
 import Settings from "./pages/Settings";
 import Usage from "./pages/Usage";
+import Budgets from "./pages/Budgets";
 import Logs from "./pages/Logs";
+import ErrorLogs from "./pages/ErrorLogs";
 import Guardrails from "./pages/Guardrails";
 import GuardrailsMonitor from "./pages/GuardrailsMonitor";
 import InternalUsers from "./pages/InternalUsers";
@@ -34,6 +36,8 @@ import SystemMonitor from "./pages/SystemMonitor";
 import ProcessManager from "./pages/ProcessManager";
 import LLMDiscoverer from "./pages/LLMDiscoverer";
 import ForgeBuilder from "./pages/ForgeBuilder";
+import CustomProviders from "./pages/CustomProviders";
+import HuggingFace from "./pages/HuggingFace";
 
 function Router() {
   return (
@@ -54,12 +58,13 @@ function Router() {
       <Route path="/tools-hub" component={() => <DashboardLayout><ToolsHub /></DashboardLayout>} />
       <Route path="/usage" component={() => <DashboardLayout><Usage /></DashboardLayout>} />
       <Route path="/logs" component={() => <DashboardLayout><Logs /></DashboardLayout>} />
+      <Route path="/error-logs" component={() => <DashboardLayout><ErrorLogs /></DashboardLayout>} />
       <Route path="/guardrails-monitor" component={() => <DashboardLayout><GuardrailsMonitor /></DashboardLayout>} />
       <Route path="/teams" component={() => <DashboardLayout><Teams /></DashboardLayout>} />
       <Route path="/internal-users" component={() => <DashboardLayout><InternalUsers /></DashboardLayout>} />
       <Route path="/organizations" component={() => <DashboardLayout><Organizations /></DashboardLayout>} />
       <Route path="/access-groups" component={() => <DashboardLayout><AccessGroups /></DashboardLayout>} />
-      <Route path="/budgets" component={() => <DashboardLayout><Usage /></DashboardLayout>} />
+      <Route path="/budgets" component={() => <DashboardLayout><Budgets /></DashboardLayout>} />
       <Route path="/system-monitor" component={() => <DashboardLayout><SystemMonitor /></DashboardLayout>} />
       <Route path="/process-manager" component={() => <DashboardLayout><ProcessManager /></DashboardLayout>} />
       <Route path="/llm-discoverer" component={() => <DashboardLayout><LLMDiscoverer /></DashboardLayout>} />
@@ -68,6 +73,8 @@ function Router() {
       <Route path="/settings" component={() => <DashboardLayout><Settings /></DashboardLayout>} />
       <Route path="/agentic" component={() => <DashboardLayout><Agentic /></DashboardLayout>} />
       <Route path="/builder" component={() => <DashboardLayout><ForgeBuilder /></DashboardLayout>} />
+      <Route path="/custom-providers" component={() => <DashboardLayout><CustomProviders /></DashboardLayout>} />
+      <Route path="/huggingface" component={() => <DashboardLayout><HuggingFace /></DashboardLayout>} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

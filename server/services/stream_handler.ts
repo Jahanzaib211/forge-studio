@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import axios from "axios";
 import { providerService } from "./provider_service";
+import { customProviderService } from "./custom_provider";
+import { directProxyStream } from "./direct_proxy";
 
 const TASK_TYPE_MODEL_MAP: Record<string, string> = {
   chat: "fast-70b",
@@ -15,14 +17,65 @@ export async function handleStreamChat(req: Request, res: Response) {
   const { messages, taskType, maxTokens, temperature, model: directModel } = req.body;
 
   const model = directModel || TASK_TYPE_MODEL_MAP[taskType || "chat"] || "fast-70b";
-  const litellmUrl = process.env.LITELLM_URL || "http://localhost:5050";
-  const litellmApiKey = process.env.LITELLM_API_KEY || "sk-ai-lab-master-key";
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders();
+
+  // Check custom providers first (standalone mode)
+  const customProvider = await customProviderService.findProviderForModel(model);
+  if (customProvider) {
+    try {
+      const upstream = await directProxyStream({
+        messages: messages || [],
+        model,
+        apiUrl: customProvider.apiUrl,
+        apiKey: customProvider.apiKey,
+        maxTokens: maxTokens || 1024,
+        temperature: temperature || 0.7,
+        stream: true,
+      });
+
+      const reader = upstream.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            res.write(chunk);
+          }
+        } catch {
+          // stream ended
+        }
+      } else {
+        const text = await upstream.text();
+        res.write(text);
+      }
+
+      providerService.recordSuccess(`custom:${customProvider.name}`);
+      res.write("data: [DONE]\n\n");
+      res.end();
+      return;
+    } catch (err: any) {
+      providerService.recordFailure(`custom:${customProvider.name}`);
+      const errorData = {
+        choices: [{ delta: { content: `Error from ${customProvider.name}: ${err.message}` }, finish_reason: "error" }],
+      };
+      res.write(`data: ${JSON.stringify(errorData)}\n\n`);
+      res.write("data: [DONE]\n\n");
+      res.end();
+      return;
+    }
+  }
+
+  // Fall back to LiteLLM
+  const litellmUrl = process.env.LITELLM_URL || "http://localhost:5050";
+  const litellmApiKey = process.env.LITELLM_API_KEY || "sk-ai-lab-master-key";
 
   const providerName = model.includes("/") ? model.split("/")[0] : model;
   const circuitOpen = await providerService.isCircuitOpen(providerName);
