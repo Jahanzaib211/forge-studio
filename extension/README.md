@@ -1,13 +1,13 @@
-# FreeAPI Forge Browser Extension
+# Forge Studio Browser Extension
 
-A powerful browser extension for Chrome and Edge that brings intelligent LLM routing directly to your browser.
+A browser extension for Chrome and Edge that sends chat completions directly to your Forge Studio instance.
 
 ## Features
 
 - **Direct API Access**: Send chat completions from any webpage
 - **Task Type Selection**: Choose between chat, coding, vision, fast, and long_context modes
 - **Secure Configuration**: Store API keys securely in browser storage
-- **Real-time Responses**: Get instant responses from the FreeAPI Forge backend
+- **Real-time Responses**: Get instant responses from your Forge Studio backend
 - **Multi-team Support**: Configure team IDs for multi-tenant access
 
 ## Installation
@@ -30,11 +30,11 @@ A powerful browser extension for Chrome and Edge that brings intelligent LLM rou
 
 ## Configuration
 
-1. Click the FreeAPI Forge extension icon in your browser toolbar
+1. Click the Forge Studio extension icon in your browser toolbar
 2. Click the ⚙️ settings button
 3. Enter your configuration:
    - **API Key**: Your X-API-Key for authentication
-   - **API Endpoint**: The base URL of your FreeAPI Forge instance (e.g., `http://localhost:3000`)
+   - **API Endpoint**: The base URL of your Forge Studio instance (e.g., `http://localhost:5051`)
    - **Team ID**: Your team identifier (default: `default`)
 4. Click "Save Settings"
 
@@ -48,7 +48,7 @@ A powerful browser extension for Chrome and Edge that brings intelligent LLM rou
 
 ## API Endpoint
 
-The extension communicates with the FreeAPI Forge backend via:
+The extension communicates with Forge Studio via:
 
 ```
 POST {apiEndpoint}/api/trpc/chat.complete
@@ -112,7 +112,3 @@ Save them in `public/icons/` directory.
 ## License
 
 MIT License - See LICENSE file for details
-
-## Support
-
-For issues, feature requests, or questions, please contact the FreeAPI Forge team.

@@ -10,6 +10,8 @@ Forge Studio is a self-hosted AI lab control center. It acts as a proxy layer th
 
 The key idea: you paste any OpenAI-compatible API URL and key into Forge Studio, and it works. No vendor lock-in. No complex configuration. If it speaks the OpenAI API format, Forge Studio can proxy it.
 
+![Forge Studio Dashboard](docs/screenshot-dashboard.png)
+
 ---
 
 ## What It Actually Does
@@ -180,6 +182,12 @@ Configure the application:
 - App name, branding
 - Theme (light/dark mode)
 - Page visibility per role
+
+### 20. Browser Extension
+
+A Chrome/Edge extension that sends chat completions directly from your browser toolbar. Configure your API key and endpoint, then use `Ctrl+Enter` to send messages from any page. Supports all task types (chat, coding, vision, fast, long context).
+
+See the [extension README](extension/README.md) for installation and usage.
 
 ---
 
