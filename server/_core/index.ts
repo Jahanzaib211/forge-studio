@@ -46,7 +46,25 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy:
+        process.env.NODE_ENV === "production"
+          ? {
+              directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'", "'unsafe-inline'"],
+                styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+                workerSrc: ["'self'", "blob:"],
+                connectSrc: ["'self'", "ws:", "wss:"],
+                fontSrc: ["'self'", "https:", "data:"],
+                imgSrc: ["'self'", "data:"],
+              },
+            }
+          : false,
+      crossOriginEmbedderPolicy: process.env.NODE_ENV !== "production" ? false : undefined,
+    })
+  );
   app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(",") ?? [] }));
 
   // Validate required env vars on startup
