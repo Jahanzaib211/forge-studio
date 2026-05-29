@@ -87,25 +87,40 @@ const sidebarSections: Section[] = [
     ],
   },
   {
-    title: "SECURITY",
+    title: "AI GATEWAY",
     items: [
       { icon: Key, label: "Virtual Keys", path: "/virtual-keys" },
+      { icon: Plug, label: "MCP Servers", path: "/mcp-servers" },
+      { icon: Zap, label: "Skills", path: "/skills" },
       { icon: Shield, label: "Guardrails", path: "/guardrails" },
-      { icon: Users, label: "Teams & Budgets", path: "/teams" },
+      { icon: FileText, label: "Policies", path: "/guardrails" },
+      { icon: Wrench, label: "Tools Hub", path: "/tools-hub" },
+      { icon: FileCode, label: "Prompt Library", path: "/prompts" },
+      { icon: GitCompare, label: "Benchmark", path: "/benchmark" },
+      { icon: HeartPulse, label: "Provider Health", path: "/provider-health" },
+      { icon: Webhook, label: "Webhooks", path: "/webhooks" },
+      { icon: Search, label: "LLM Discoverer", path: "/llm-discoverer" },
     ],
   },
   {
-    title: "OBSERVABILITY",
+    title: "SYSTEM",
     items: [
       { icon: Activity, label: "System Monitor", path: "/system-monitor" },
+      { icon: Settings, label: "Process Manager", path: "/process-manager" },
+      { icon: Brain, label: "HuggingFace Hub", path: "/huggingface" },
       { icon: BarChart3, label: "Usage & Logs", path: "/usage" },
       { icon: HeartPulse, label: "Providers", path: "/providers" },
     ],
   },
   {
+    title: "SECURITY",
+    items: [
+      { icon: Users, label: "Teams & Budgets", path: "/teams" },
+    ],
+  },
+  {
     title: "DEVELOPER",
     items: [
-      { icon: Plug, label: "MCP Servers", path: "/mcp-servers" },
       { icon: BookOpen, label: "API Reference", path: "/api-reference" },
       { icon: Settings, label: "Settings", path: "/settings" },
     ],
