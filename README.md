@@ -1,362 +1,207 @@
-# Forge Studio — AI Lab Control Center
+# Forge Studio — Monster AI Lab Control Center
 
-A production-grade, AI lab-level LLM routing platform with intelligent provider selection, budget tracking, circuit breaking, and a companion browser extension. Built with React 19, Express 4, tRPC 11, PostgreSQL, and Redis.
+**Made by Jahanzaib Ali** | [github.com/Jahanzaib211](https://github.com/Jahanzaib211)
 
-**Forge Studio** routes API requests across multiple free-tier LLM providers (Groq, Gemini, Mistral, Cerebras, SambaNova, Cohere, OpenRouter, Cloudflare) through LiteLLM proxy with automatic failover, circuit breaking, and cost optimization.
-
----
-
-## 🚀 Features
-
-### Core Capabilities
-- **Intelligent LLM Routing**: Task-type based routing (chat, coding, vision, fast, long_context) to optimal providers
-- **Circuit Breaker Pattern**: Redis-backed automatic failover when providers fail (3 failures → 60s cooldown)
-- **Budget Tracking**: Per-team monthly spend limits with real-time cost tracking
-- **Provider Health Monitor**: Real-time status dashboard with circuit state, quality scores, and latency metrics
-- **Request History**: Complete audit log with filtering, pagination, and CSV export
-- **Browser Extension**: Chrome/Edge popup for direct LLM access from any webpage
-- **Admin Panel**: Configure providers, adjust quality scores, reset circuit breakers
-- **System Health**: Monitor PostgreSQL, Redis, and LiteLLM proxy status
-
-### Elite GUI
-- **Live Dashboard**: Real-time stats with auto-refresh (5s intervals)
-- **Interactive Charts**: Request volume (24h), top models (pie chart), provider performance
-- **Chat Laboratory**: Full-featured chat interface with token/latency tracking
-- **Dark Theme**: Beautiful gradients, backdrop blur, and smooth animations
-- **Instant Updates**: All data reactive with tRPC's refetchInterval
+A production-grade, AI lab-level LLM routing platform with intelligent provider selection, budget tracking, circuit breaking, MCP integration, skills system, system monitoring, and a Manus/Genspark-style product builder. Built with React 19, Express 4, tRPC 11, PostgreSQL, Redis, and WebSocket.
 
 ---
 
-## 🏗️ Architecture
+## Features
+
+### AI Gateway
+- **Virtual Keys**: API key management with budget limits, rate limits (TPM/RPM), model restrictions, key rotation
+- **Playground**: Streaming chat with model selection, task types, real-time token/latency tracking
+- **Models + Endpoints**: LiteLLM config management, add/remove/test models without restart
+- **Agentic**: Agent management with system prompts, tools, MCP servers, A2A protocol support
+- **MCP Servers**: Host + Server (Model Context Protocol) - connect to external MCP servers, expose Forge Studio as MCP server
+- **Skills**: Filesystem-based SKILL.md system with progressive disclosure and script execution
+- **Guardrails**: Pre/during/post-call content filtering (PII detection, injection blocking, toxicity)
+- **Policies**: Group guardrails and attach to teams/keys/models
+- **Tools**: Search tools, vector stores, tool policies
+
+### Forge Builder (Manus/Genspark-style)
+- **Resource Tree**: Browse models, MCP servers, skills from the lab
+- **Builder Canvas**: Add workflow blocks (System Prompt, Model Selection, Tool Config, Schema, Workflow Steps, Code Block)
+- **Test Panel**: Run test queries with streaming output
+- **Deploy**: Save to localStorage, export as JSON, deploy as agent
+- **Real-time**: Live preview of configuration
+
+### Observability
+- **Usage**: Analytics dashboard with spend/token tracking per key/team/model
+- **Logs**: Detailed request logs with filtering, CSV export
+- **Guardrails Monitor**: Execution results, detection details, policy matches
+
+### Access Control
+- **Teams**: Multi-tenant team management with budgets
+- **Internal Users**: User role management (admin/member/viewer)
+- **Organizations**: Multi-tenant org isolation
+- **Access Groups**: Reusable resource sets (models, MCP servers, agents)
+- **Budgets**: Per-team budget tracking with real-time spend
+
+### System
+- **System Monitor**: Real-time CPU/GPU/RAM monitoring via WebSocket (1s updates)
+  - Per-core CPU usage gauges
+  - RAM/Swap usage with progress bars
+  - GPU utilization, VRAM, temperature, power, fan speed (via nvidia-smi)
+  - Per-process GPU VRAM attribution
+  - AI process detection (Ollama, llama.cpp, Python, vLLM)
+  - Top processes table with kill capability
+- **Process Manager**: PM2 process management (start/stop/restart/delete/logs)
+- **LLM Discoverer**: Auto-detect local LLMs from Ollama, llama.cpp, GGUF files, HuggingFace cache
+
+### Developer Tools
+- **API Reference**: Interactive Swagger documentation
+- **AI Hub**: Public model catalog for developers
+- **OpenAI Compatible**: `/v1/chat/completions` endpoint
+
+### Inference Lab
+- **GPU Offloading**: Configure GPU layers (ngl 0-100) from GUI
+- **Context/Batch**: Context size, batch size, ubatch size sliders
+- **Advanced**: Flash attention, KV cache quantization, rope scaling, parallel sequences
+- **Real-time GPU Stats**: VRAM usage, utilization, temperature during inference
+- **Model Info**: File size, quantization, VRAM estimates
+
+### Settings
+- **Admin Config**: SSO, default team, UI visibility
+- **Branding**: Logo, app name, color theme
+- **Theme Toggle**: Light/Dark mode
+
+---
+
+## Architecture
 
 ```
-Browser Extension ──┐
-                    ├──→ Forge Studio (port 5051) ──┬──→ LiteLLM Proxy (5050) ──→ 20+ models
-React UI ───────────┘                                ├──→ PostgreSQL (5434/freeapi_forge)
-                                                     └──→ Redis (6379/1) circuit breaker
+Browser ──→ Forge Studio (port 5051) ──→ LiteLLM Proxy (5050) ──→ 30+ models
+                    │                          │
+                    ├──→ PostgreSQL (5434)       ├──→ Groq (free)
+                    ├──→ Redis (6379)            ├──→ Gemini (free)
+                    ├──→ WebSocket (/ws)         ├──→ Mistral (free)
+                    └──→ MCP SSE (/mcp/sse)      ├──→ Cerebras (free)
+                                                 ├──→ SambaNova (free)
+                                                 ├──→ Ollama (local)
+                                                 └──→ llama.cpp (local)
 ```
 
 ### Tech Stack
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 19, Tailwind 4, shadcn/ui, Recharts, wouter, framer-motion |
-| Backend | Express 4, tRPC 11, Zod validation |
-| Database | PostgreSQL 17 (Drizzle ORM) |
-| Cache | Redis 7 (ioredis) |
-| LLM Proxy | LiteLLM (20+ models) |
-| Testing | Vitest |
+| Frontend | React 19, Tailwind 4, shadcn/ui, Recharts, wouter, Framer Motion |
+| Backend | Express 4, tRPC 11, WebSocket (ws), Zod validation |
+| Database | PostgreSQL 17 (Drizzle ORM) - 15 tables |
+| Cache | Redis 7 (ioredis) - circuit breaker, real-time stats |
+| LLM Proxy | LiteLLM (30+ models across 10+ providers) |
+| Monitoring | nvidia-smi, PM2, /proc filesystem |
+| MCP | Model Context Protocol (Host + Server) |
 | Deploy | PM2, Docker ready |
 
 ---
 
-## 📦 Quick Start
-
-### Prerequisites
-- Node.js 23+
-- pnpm 11+
-- PostgreSQL 17 (running on port 5434)
-- Redis 7 (running on port 6379)
-- LiteLLM Proxy (running on port 5050)
-
-### Installation
+## Quick Start
 
 ```bash
-cd /home/jahanzaib/freeapi-forge
-
 # Install dependencies
 pnpm install
 
-# Run database migrations
-DATABASE_URL="postgresql://litellm_user:litellm_password_123@localhost:5434/freeapi_forge" pnpm db:push
+# Start Redis (if not running)
+docker run -d --name redis -p 6379:6379 redis:alpine
 
-# Seed database with initial data
-DATABASE_URL="postgresql://litellm_user:litellm_password_123@localhost:5434/freeapi_forge" npx tsx server/seed.ts
+# Seed database
+pnpm tsx server/seed.ts
 
 # Start development server
 pnpm dev
 ```
 
-The app will be available at **http://localhost:5051**
+Open http://localhost:5051/
 
-### Production with PM2
+---
+
+## Environment Variables
+
+```env
+DATABASE_URL=postgresql://litellm_user:litellm_password_123@localhost:5434/freeapi_forge
+REDIS_URL=redis://localhost:6379/1
+LITELLM_URL=http://localhost:5050
+LITELLM_API_KEY=sk-ai-lab-master-key
+PORT=5051
+NODE_ENV=development
+```
+
+---
+
+## PM2 Production Deploy
 
 ```bash
-# Start with PM2
+# Start all services
 pm2 start ecosystem.config.cjs
 
 # Save process list
 pm2 save
 
-# View logs
-pm2 logs forge-studio
+# Setup auto-start on boot
+pm2 startup
 ```
 
 ---
 
-## 🗄️ Database Schema
+## API Endpoints
 
-7 tables in PostgreSQL:
-
-| Table | Purpose |
-|-------|---------|
-| `users` | User accounts with role-based access (user/admin) |
-| `teams` | Team configuration and budget ownership |
-| `apiKeys` | API key management with revocation support |
-| `providers` | LLM provider configuration (endpoint, quality, latency, cost) |
-| `requestHistory` | Complete audit log of all LLM requests |
-| `budgetLimits` | Per-team monthly spend limits and current usage |
-| `auditLogs` | Admin action audit trail |
-
----
-
-## 🔌 API Endpoints
-
-All endpoints are under `/api/trpc` using tRPC protocol.
-
-### Public Endpoints
-- `health.check` - Basic health check
-- `health.detailed` - Detailed system health (DB, Redis, providers)
-- `providers.list` - List all configured providers
-- `providers.status` - Real-time provider status with circuit breaker state
-
-### Protected Endpoints (require auth)
-- `chat.complete` - Send LLM request with task-type routing
-- `budget.getMonthlySpend` - Get current month's spend
-- `requests.list` - Paginated request history
-
-### Admin Endpoints (require admin role)
-- `admin.getProviders` - List providers for admin
-- `admin.updateProvider` - Update provider configuration
-- `admin.resetCircuitBreaker` - Reset circuit breaker for a provider
-- `admin.resetProviderHealth` - Reset all health metrics for a provider
-- `budget.updateLimit` - Update monthly budget limit
+| Endpoint | Description |
+|----------|-------------|
+| `POST /v1/chat/completions` | OpenAI-compatible chat completions |
+| `GET /v1/models` | List available models |
+| `POST /api/stream/chat` | SSE streaming chat |
+| `GET /api/trpc/*` | tRPC API |
+| `GET /mcp/sse` | MCP Server-Sent Events |
+| `POST /mcp/message` | MCP JSON-RPC messages |
+| `GET /api-docs` | API documentation |
+| `WS /ws` | WebSocket for real-time system stats |
 
 ---
 
-## 🎯 Task Type Routing
+## Database Schema (15 tables)
 
-The system routes requests to optimal models based on task type:
-
-| Task Type | Model | Use Case |
-|-----------|-------|----------|
-| `chat` | fast-70b | General conversation (Groq Llama 3.3 70B) |
-| `coding` | coder | Code generation (Mistral Codestral) |
-| `vision` | gemini-flash | Image understanding (Gemini 2.5 Flash) |
-| `fast` | fast-8b | Quick responses (Groq Llama 3.1 8B) |
-| `long_context` | smart | Long documents (Gemini 2.5 Flash) |
-
----
-
-## 🔒 Authentication
-
-### Development Mode
-- Mock session cookie authentication
-- Default admin user: `local-dev-user`
-- Access via `/auth/mock` endpoint
-
-### Production Mode
-- API key authentication via `X-API-Key` header
-- Session cookie authentication for web UI
-- Role-based access control (user/admin)
+- `users` - User authentication and roles
+- `teams` - Multi-tenant team management
+- `apiKeys` - API key management
+- `providers` - LLM provider configurations
+- `requestHistory` - Request logging
+- `budgetLimits` - Budget tracking
+- `auditLogs` - Audit trail
+- `virtualKeys` - Virtual API keys with budgets
+- `organizations` - Org isolation
+- `accessGroups` - Reusable resource sets
+- `mcpServers` - MCP server registry
+- `skills` - Installed skills
+- `guardrails` - Content filtering rules
+- `policies` - Guardrail groupings
+- `agents` - Agent configurations
+- `usageLogs` - Usage analytics
+- `systemEvents` - Error/event logging
 
 ---
 
-## 🌐 Browser Extension
+## LiteLLM Integration
 
-### Installation
+Forge Studio connects to LiteLLM proxy which routes to 30+ models:
 
-1. Open Chrome/Edge extensions page (`chrome://extensions/` or `edge://extensions/`)
-2. Enable "Developer mode"
-3. Click "Load unpacked"
-4. Select the `extension` directory
-5. Configure API endpoint: `http://localhost:5051`
-6. Set API key (if required)
+### Free Providers
+- **Groq**: llama-3.3-70b, llama-3.1-8b, qwen3-32b, llama-4-scout
+- **Google Gemini**: gemini-2.5-flash, gemini-2.5-flash-lite
+- **Mistral**: mistral-large, codestral-latest, open-mistral-nemo
+- **Cerebras**: gpt-oss-120b, zai-glm-4.7
+- **SambaNova**: Meta-Llama-3.3-70B-Instruct
+- **Cohere**: command-a, command-r7b, aya-expanse-32b
+- **OpenRouter**: nemotron-super, deepseek-v4-flash, gpt-oss-120b
+- **NVIDIA NIM**: llama-3.3-70b, nemotron-super
+- **Cloudflare**: llama-3.1-8b, llama-3.3-70b
 
-### Features
-- Send chat completions from any webpage
-- Task type selector
-- Secure credential storage
-- Real-time response display
-
----
-
-## 📊 Monitoring
-
-### System Health Page
-Real-time monitoring of:
-- PostgreSQL connection status
-- Redis connection status
-- LiteLLM proxy health
-- Individual provider circuit breaker state
-
-### Provider Monitor
-- Circuit state visualization (open/closed)
-- Quality score bars
-- Latency metrics
-- Failure count tracking
-- Admin controls to reset circuit breakers
-
-### Request History
-- Paginated table with filtering
-- Search by provider, task type, or status
-- CSV export functionality
-- Cost tracking per request
+### Local Models
+- **Ollama**: Qwopus-GLM-18B, Hermes-4-14B
+- **llama.cpp**: DeepSeek-Coder-V2-Lite (running on port 8085)
 
 ---
 
-## 🧪 Testing
+## License
 
-```bash
-# Run all tests
-pnpm test
-
-# Run tests in watch mode
-pnpm test:watch
-
-# Type checking
-pnpm check
-```
-
----
-
-## 🐳 Docker Deployment
-
-```bash
-# Build and run with docker-compose
-docker-compose up -d
-
-# Access the application
-# Web UI: http://localhost:3000
-# API: http://localhost:3000/api
-```
-
-The docker-compose includes:
-- Forge Studio app
-- Redis 7
-- MySQL 8 (can be swapped for PostgreSQL)
-- Optional Ollama for local LLM fallback
-
----
-
-## 🔧 Configuration
-
-### Environment Variables
-
-```env
-# Database
-DATABASE_URL="postgresql://litellm_user:litellm_password_123@localhost:5434/freeapi_forge"
-
-# Redis
-REDIS_URL="redis://localhost:6379/1"
-
-# Server
-PORT=5051
-NODE_ENV="development"
-
-# LiteLLM Proxy
-LITELLM_URL="http://localhost:5050"
-LITELLM_API_KEY="sk-ai-lab-master-key"
-
-# Auth
-JWT_SECRET="freeapi-forge-local-secret"
-```
-
----
-
-## 📈 Performance
-
-- **Response Time**: <100ms average (with LiteLLM cache)
-- **Provider Failover**: <5s to next provider
-- **Circuit Breaker Recovery**: 60s default
-- **Rate Limit Cooldown**: 65s default
-- **Budget Check**: Atomic database operation
-- **Auto-refresh**: 3-5s intervals for live data
-
----
-
-## 🛡️ Security
-
-- **API Key Authentication**: SHA-256 hashing
-- **Budget Enforcement**: Atomic operations prevent overspending
-- **Circuit Breaker**: Protects against cascading failures
-- **Rate Limiting**: Per-provider tracking in Redis
-- **CORS**: Configurable cross-origin support
-- **Role-Based Access**: Admin/user separation
-
----
-
-## 📝 Development
-
-### Project Structure
-
-```
-freeapi-forge/
-├── client/                    # React frontend
-│   ├── src/
-│   │   ├── pages/            # Page components (Dashboard, ProviderMonitor, etc.)
-│   │   ├── components/       # Reusable components
-│   │   ├── lib/              # tRPC client
-│   │   └── App.tsx           # Routes
-│   └── index.html
-├── server/                    # Express backend
-│   ├── routers.ts            # tRPC procedures
-│   ├── db.ts                 # Database helpers
-│   ├── services/             # Business logic (LLMRouter, ProviderService)
-│   ├── _core/                # Framework code
-│   └── seed.ts               # Database seeding
-├── extension/                 # Browser extension
-├── drizzle/                   # Database schema & migrations
-├── ecosystem.config.cjs       # PM2 configuration
-└── docker-compose.yml
-```
-
-### Adding a New Provider
-
-1. Add to database:
-```sql
-INSERT INTO providers (name, "litellmEndpoint", enabled, "qualityScore", "latencyMs", "costPerMToken")
-VALUES ('new-provider', 'http://localhost:5050', 1, 75, 250, 50);
-```
-
-2. Configure in LiteLLM proxy (`~/.litellm/config.yaml`)
-
-3. The provider will automatically appear in the dashboard
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Run `pnpm check` and `pnpm test`
-6. Submit a pull request
-
----
-
-## 📄 License
-
-MIT License - See LICENSE file for details
-
----
-
-## 🙏 Acknowledgments
-
-- **LiteLLM**: Unified interface for 100+ LLM providers
-- **Drizzle ORM**: Type-safe database toolkit
-- **tRPC**: End-to-end typesafe APIs
-- **shadcn/ui**: Beautiful component library
-
----
-
-## 📞 Support
-
-For issues, feature requests, or questions:
-- Check the System Health page at `/health`
-- Review logs: `pm2 logs forge-studio`
-- Check LiteLLM proxy: `http://localhost:5050/health`
-
----
-
-**Built with ❤️ for the AI community**
+MIT License - Made by Jahanzaib Ali
