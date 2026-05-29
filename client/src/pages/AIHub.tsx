@@ -23,17 +23,7 @@ export default function AIHub() {
   const modelsQuery = trpc.models.list.useQuery(undefined);
   const agentsQuery = trpc.agents?.list?.useQuery(undefined) ?? { data: undefined };
 
-  const models = modelsQuery.data ?? [
-    { name: "gpt-4o", provider: "openai", status: "ready", contextWindow: 128000, pricing: "$5/$15 per 1M" },
-    { name: "gpt-4o-mini", provider: "openai", status: "ready", contextWindow: 128000, pricing: "$0.15/$0.60 per 1M" },
-    { name: "claude-3-opus", provider: "anthropic", status: "ready", contextWindow: 200000, pricing: "$15/$75 per 1M" },
-    { name: "claude-3-sonnet", provider: "anthropic", status: "ready", contextWindow: 200000, pricing: "$3/$15 per 1M" },
-    { name: "llama-3-70b", provider: "meta", status: "ready", contextWindow: 8192, pricing: "$0.90/$0.90 per 1M" },
-    { name: "mixtral-8x7b", provider: "mistral", status: "ready", contextWindow: 32768, pricing: "$0.27/$0.27 per 1M" },
-    { name: "gemini-1.5-pro", provider: "google", status: "ready", contextWindow: 1000000, pricing: "$1.25/$5 per 1M" },
-    { name: "command-r-plus", provider: "cohere", status: "beta", contextWindow: 128000, pricing: "$2.5/$10 per 1M" },
-  ];
-
+  const models = modelsQuery.data ?? [];
   const agents = (agentsQuery.data as any[]) ?? [];
   const providers = Array.from(new Set(models.map((m: any) => m.provider)));
 

@@ -47,6 +47,7 @@ export default function SkillsHub() {
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newCategory, setNewCategory] = useState("general");
+  const [newSkillMd, setNewSkillMd] = useState("");
   const [liveOutput, setLiveOutput] = useState("");
   const [executing, setExecuting] = useState(false);
 
@@ -56,6 +57,17 @@ export default function SkillsHub() {
   const syncMut = trpc.skills.sync.useMutation({
     onSuccess: () => {
       utils.skills.list.invalidate();
+    },
+  });
+
+  const createMut = trpc.skills.sync.useMutation({
+    onSuccess: () => {
+      utils.skills.list.invalidate();
+      setShowCreate(false);
+      setNewName("");
+      setNewDesc("");
+      setNewCategory("general");
+      setNewSkillMd("");
     },
   });
 
@@ -271,6 +283,8 @@ export default function SkillsHub() {
               <div>
                 <label className="text-xs text-slate-400 mb-1 block">SKILL.md Content</label>
                 <Textarea
+                  value={newSkillMd}
+                  onChange={(e) => setNewSkillMd(e.target.value)}
                   placeholder="# My Skill&#10;&#10;Instructions here..."
                   className="bg-slate-700 border-slate-600 text-white font-mono text-xs min-h-[120px]"
                 />
@@ -286,11 +300,11 @@ export default function SkillsHub() {
               </Button>
               <Button
                 className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => syncMut.mutate()}
-                disabled={syncMut.isPending}
+                onClick={() => createMut.mutate()}
+                disabled={createMut.isPending}
               >
-                {syncMut.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Sync Skills
+                {createMut.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Create Skill
               </Button>
             </DialogFooter>
           </DialogContent>

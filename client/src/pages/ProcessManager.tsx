@@ -22,6 +22,17 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
+function formatUptime(ms: number): string {
+  if (!ms) return "—";
+  const seconds = Math.floor((Date.now() - ms) / 1000);
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
 export default function ProcessManager() {
   const [selectedLog, setSelectedLog] = useState<string | null>(null);
   const [logLines, setLogLines] = useState(50);
@@ -130,7 +141,7 @@ export default function ProcessManager() {
                         {proc.memory ? `${(proc.memory / 1024 / 1024).toFixed(1)} MB` : "—"}
                       </td>
                       <td className="p-4 text-right text-xs text-slate-300">{proc.restarts || 0}</td>
-                      <td className="p-4 text-right text-xs text-slate-400">{proc.uptime || "—"}</td>
+                      <td className="p-4 text-right text-xs text-slate-400">{formatUptime(proc.uptime)}</td>
                       <td className="p-4 text-right text-xs text-slate-400 font-mono">{proc.pid}</td>
                       <td className="p-4">
                         <div className="flex items-center justify-end gap-1">

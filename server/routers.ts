@@ -160,7 +160,7 @@ export const appRouter = router({
 
   // Budget tracking
   budget: router({
-    getMonthlySpend: protectedProcedure
+    getMonthlySpend: publicProcedure
       .input(z.object({ teamId: z.string().default("default") }))
       .query(async ({ input }) => {
         const monthYear = new Date().toISOString().slice(0, 7);

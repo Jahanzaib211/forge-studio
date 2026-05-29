@@ -50,7 +50,7 @@ export default function Guardrails() {
   const [showCreate, setShowCreate] = useState(false);
   const [selectedGuardrail, setSelectedGuardrail] = useState<any>(null);
   const [testInput, setTestInput] = useState("");
-  const [testResult, setTestResult] = useState<any>(null);
+  const [testResult, setTestResult] = useState<{ passed: boolean; detections: { type: string; detail: string }[] } | null>(null);
   const [testing, setTesting] = useState(false);
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState("pre");
@@ -72,6 +72,47 @@ export default function Guardrails() {
       setToxicityKeywords("");
     },
   });
+
+  const testGuardrail = () => {
+    if (!testInput || !selectedGuardrail) return;
+    setTesting(true);
+    setTestResult(null);
+
+    const detections: { type: string; detail: string }[] = [];
+    const config = selectedGuardrail.config ? JSON.parse(selectedGuardrail.config) : {};
+
+    if (config.piiDetection) {
+      const piiPatterns = [/\b\d{3}-\d{2}-\d{4}\b/g, /\b\d{16}\b/g, /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g];
+      for (const pattern of piiPatterns) {
+        const matches = testInput.match(pattern);
+        if (matches) {
+          detections.push({ type: "PII", detail: `Detected: ${matches[0]}` });
+        }
+      }
+    }
+
+    if (config.injectionBlocking) {
+      const injectionPatterns = [/ignore previous/i, /system prompt/i, /ignore all/i, /disregard/i, /override/i];
+      for (const pattern of injectionPatterns) {
+        if (pattern.test(testInput)) {
+          detections.push({ type: "Injection", detail: `Pattern matched: ${pattern.source}` });
+        }
+      }
+    }
+
+    if (config.customPatterns && Array.isArray(config.customPatterns)) {
+      for (const keyword of config.customPatterns) {
+        if (testInput.toLowerCase().includes(keyword.toLowerCase())) {
+          detections.push({ type: "Toxicity", detail: `Keyword detected: ${keyword}` });
+        }
+      }
+    }
+
+    setTimeout(() => {
+      setTestResult({ passed: detections.length === 0, detections });
+      setTesting(false);
+    }, 500);
+  };
 
   const guardrails = listQuery.data || [];
   const policies = policiesQuery.data || [];
@@ -245,16 +286,8 @@ export default function Guardrails() {
                 />
                 <Button
                   className="w-full bg-green-600 hover:bg-green-700 text-white text-xs"
-                  onClick={() => {
-                    if (!testInput || !selectedGuardrail) return;
-                    setTesting(true);
-                    setTestResult(null);
-                    setTimeout(() => {
-                      setTestResult({ passed: true, detections: [] });
-                      setTesting(false);
-                    }, 1000);
-                  }}
-                  disabled={!testInput || testing}
+                  onClick={testGuardrail}
+                  disabled={!testInput || !selectedGuardrail || testing}
                 >
                   {testing ? (
                     <Loader2 className="w-3 h-3 mr-2 animate-spin" />

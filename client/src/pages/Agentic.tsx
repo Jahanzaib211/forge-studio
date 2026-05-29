@@ -45,11 +45,7 @@ export default function Agentic() {
   const agentsQuery = trpc.agents?.list?.useQuery(undefined) ?? { data: undefined, isLoading: false };
   const modelsQuery = trpc.models.list.useQuery(undefined);
 
-  const agents = (agentsQuery.data as any[]) ?? [
-    { id: "1", name: "Code Assistant", model: "gpt-4o", tools: ["search", "code_exec"], mcpServers: 2, budget: 25, status: "active" },
-    { id: "2", name: "Data Analyst", model: "claude-3-opus", tools: ["search"], mcpServers: 1, budget: 50, status: "active" },
-    { id: "3", name: "Support Bot", model: "gpt-4o-mini", tools: ["search", "wiki"], mcpServers: 3, budget: 15, status: "paused" },
-  ];
+  const agents = (agentsQuery.data as any[]) ?? [];
   const models = modelsQuery.data ?? [];
   const toolsList = ["search", "code_exec", "web_browse", "file_read", "file_write", "wiki", "calculator"];
   const mcpList = ["filesystem", "postgres", "github", "slack", "notion"];
@@ -62,19 +58,60 @@ export default function Agentic() {
     setFormBudget("10");
   };
 
-  const handleTestSend = () => {
+  const handleTestSend = async () => {
     if (!chatInput.trim()) return;
     const userMsg: ChatMessage = { role: "user", content: chatInput, timestamp: new Date() };
     setChatMessages((prev) => [...prev, userMsg]);
     setChatInput("");
     setChatLoading(true);
-    setTimeout(() => {
+
+    try {
+      const agent = agents.find((a: any) => a.id === testAgentId);
+      const response = await fetch("/api/stream/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [...chatMessages, userMsg].map((m) => ({ role: m.role, content: m.content })),
+          model: agent?.model || "gpt-4o",
+          temperature: 0.7,
+          maxTokens: 1024,
+        }),
+      });
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) throw new Error("No reader");
+
+      let fullContent = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        for (const line of chunk.split("\n")) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6).trim();
+            if (data === "[DONE]") continue;
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content || "";
+              if (content) fullContent += content;
+            } catch {}
+          }
+        }
+      }
+
       setChatMessages((prev) => [
         ...prev,
-        { role: "assistant", content: `[${testAgentId}] This is a simulated agent response. In production, this would call the agent's LLM with the configured tools and MCP servers.`, timestamp: new Date() },
+        { role: "assistant", content: fullContent || "No response received.", timestamp: new Date() },
       ]);
+    } catch (error: any) {
+      setChatMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: `Error: ${error.message}`, timestamp: new Date() },
+      ]);
+    } finally {
       setChatLoading(false);
-    }, 1200);
+    }
   };
 
   return (

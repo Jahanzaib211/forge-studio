@@ -40,6 +40,8 @@ export default function Dashboard() {
   const budgetQuery = trpc.budget.getMonthlySpend.useQuery({ teamId: "default" }, { refetchInterval: 5000 });
   const modelsQuery = trpc.models.list.useQuery(undefined, { refetchInterval: 10000 });
 
+  const isLoading = liveStatsQuery.isLoading || hourlyQuery.isLoading || topModelsQuery.isLoading;
+
   const models = modelsQuery.data || [];
 
   useEffect(() => {
@@ -144,7 +146,7 @@ export default function Dashboard() {
           </div>
           <Badge className="bg-green-600/20 text-green-400 border-green-600/50 px-3 py-1">
             <Activity className="w-3 h-3 mr-1" />
-            Live
+            {isLoading ? "Loading..." : "Live"}
           </Badge>
         </div>
 

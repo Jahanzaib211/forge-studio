@@ -110,6 +110,13 @@ export default function LLMDiscoverer() {
     refetchInterval: 10000,
   });
 
+  const utils = trpc.useUtils();
+  const registerMut = trpc.models.add.useMutation({
+    onSuccess: () => {
+      utils.models.list.invalidate();
+    },
+  });
+
   const ollamaModels = llms?.filter((m: any) => m.source === "ollama") || [];
   const llamaCppModels = llms?.filter((m: any) => m.source === "llama-cpp") || [];
   const ggufFiles = llms?.filter((m: any) => m.source === "gguf") || [];
@@ -163,7 +170,23 @@ export default function LLMDiscoverer() {
                       <ModelCard
                         key={`${model.name}-${i}`}
                         model={model}
-                        onRegister={() => {}}
+                        onRegister={() => {
+                          if (model.source === "ollama") {
+                            registerMut.mutate({
+                              modelName: model.name,
+                              provider: "ollama",
+                              modelId: model.name,
+                              apiBase: "http://127.0.0.1:11434",
+                            });
+                          } else if (model.source === "llama-cpp") {
+                            registerMut.mutate({
+                              modelName: model.name,
+                              provider: "openai",
+                              modelId: model.name,
+                              apiBase: "http://127.0.0.1:8081/v1",
+                            });
+                          }
+                        }}
                         onLoad={group.title === "Ollama" ? () => alert(`Use: ollama pull ${model.name}`) : undefined}
                       />
                     ))}

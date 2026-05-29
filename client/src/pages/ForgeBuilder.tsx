@@ -365,6 +365,13 @@ export default function ForgeBuilder() {
     },
   });
 
+  const chatComplete = trpc.chat.complete.useMutation({
+    onError: (err) => {
+      toast.error(`Test failed: ${err.message}`);
+      setTestRunning(false);
+    },
+  });
+
   const models = modelsQuery.data ?? [];
   const mcpServers = mcpQuery.data ?? [];
   const skills = skillsQuery.data ?? [];
@@ -513,7 +520,7 @@ export default function ForgeBuilder() {
     });
   };
 
-  const handleTestRun = () => {
+  const handleTestRun = async () => {
     const query = testQuery || project.blocks.find((b) => b.type === "test")?.config.query || "";
     if (!query.trim()) {
       toast.error("Enter a test query first");
@@ -522,26 +529,56 @@ export default function ForgeBuilder() {
     setTestRunning(true);
     setTestOutput("");
     const config = buildConfig();
-    const lines = [
-      `[Forge] Starting test run...`,
-      `[Forge] Model: ${config.model || "default"}`,
-      `[Forge] Prompt: ${config.systemPrompt ? config.systemPrompt.slice(0, 80) + "..." : "none"}`,
-      `[Forge] MCP Servers: ${config.mcpServerIds.length}`,
-      `[Forge] Query: ${query}`,
-      ``,
-      `[Forge] Sending to LLM...`,
-    ];
-    let i = 0;
-    const interval = setInterval(() => {
-      i++;
-      if (i < lines.length) {
-        setTestOutput((prev) => prev + lines[i - 1] + "\n");
-      } else if (i === lines.length) {
-        setTestOutput((prev) => prev + `\n[Forge] Response received.\n[Forge] This is a simulated output. Connect to a live LLM endpoint for real results.\n`);
-        setTestRunning(false);
-        clearInterval(interval);
+
+    try {
+      const systemPrompt = config.systemPrompt || "You are a helpful assistant.";
+      const response = await fetch("/api/stream/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: query },
+          ],
+          model: config.model || undefined,
+          temperature: config.temperature,
+          maxTokens: config.maxTokens,
+        }),
+      });
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) throw new Error("No reader");
+
+      let fullContent = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        for (const line of chunk.split("\n")) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6).trim();
+            if (data === "[DONE]") continue;
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content || "";
+              if (content) {
+                fullContent += content;
+                setTestOutput(fullContent);
+              }
+            } catch {}
+          }
+        }
       }
-    }, 300);
+
+      if (!fullContent) {
+        setTestOutput("No response received from the model.");
+      }
+    } catch (err: any) {
+      setTestOutput(`Error: ${err.message || "Failed to reach LLM endpoint"}`);
+    } finally {
+      setTestRunning(false);
+    }
   };
 
   useEffect(() => {
@@ -598,8 +635,14 @@ export default function ForgeBuilder() {
             {createAgent.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Rocket className="w-4 h-4 mr-1" />}
             Deploy
           </Button>
-          <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleTestRun}>
-            <Play className="w-4 h-4 mr-1" /> Test
+          <Button
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={handleTestRun}
+            disabled={testRunning}
+          >
+            {testRunning ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Play className="w-4 h-4 mr-1" />}
+            Test
           </Button>
         </div>
       </div>

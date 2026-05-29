@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useTheme } from "@/contexts/ThemeContext";
 import { trpc } from "@/lib/trpc";
 import {
   Activity,
@@ -17,12 +18,14 @@ import {
   Layers,
   Lock,
   MessageSquare,
+  Moon,
   Plug,
   Search,
   ScrollText,
   Settings,
   Shield,
   ShieldAlert,
+  Sun,
   User,
   Users,
   Wrench,
@@ -47,9 +50,31 @@ export default function Home() {
     ? Math.round(systemStats.gpu.reduce((sum, g) => sum + g.utilizationGpu, 0) / systemStats.gpu.length)
     : null;
 
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       <div className="max-w-[1800px] mx-auto p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div />
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="text-sm text-slate-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-800/50"
+            >
+              Dashboard →
+            </Link>
+            {toggleTheme && (
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg hover:bg-slate-800/50 transition-colors text-slate-400 hover:text-white"
+                title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              >
+                {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              </button>
+            )}
+          </div>
+        </div>
         <div className="mb-12 text-center">
           <div className="flex items-center justify-center gap-4 mb-6">
             <img
@@ -76,13 +101,19 @@ export default function Home() {
           </a>
 
           <div className="flex items-center justify-center gap-3 mt-6 mb-4 flex-wrap">
-            <Badge className="bg-green-600/20 text-green-400 border-green-600/50 px-4 py-2 text-sm">
+            <Badge className={`px-4 py-2 text-sm ${
+              health?.status === "healthy"
+                ? "bg-green-600/20 text-green-400 border-green-600/50"
+                : health?.status === "degraded"
+                  ? "bg-yellow-600/20 text-yellow-400 border-yellow-600/50"
+                  : "bg-slate-600/20 text-slate-400 border-slate-600/50"
+            }`}>
               <Activity className="w-4 h-4 mr-2" />
-              {health?.status === "healthy" ? "System Healthy" : "Checking..."}
+              {health?.status === "healthy" ? "System Healthy" : health?.status === "degraded" ? "Degraded" : "Checking..."}
             </Badge>
             <Badge className="bg-blue-600/20 text-blue-400 border-blue-600/50 px-4 py-2 text-sm">
               <Cpu className="w-4 h-4 mr-2" />
-              {healthyProviders}/{providers.filter(p => p.enabled).length} Providers
+              {healthyProviders}/{providers.filter(p => p.enabled).length} Providers Active
             </Badge>
             <Badge className="bg-purple-600/20 text-purple-400 border-purple-600/50 px-4 py-2 text-sm">
               <Database className="w-4 h-4 mr-2" />

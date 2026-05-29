@@ -46,19 +46,31 @@ async function detectOllamaModels(): Promise<DetectedModel[]> {
     for (const line of lines) {
       const parts = line.split(/\s+/);
       if (parts.length >= 2) {
-        const sizeStr = parts[1];
+        let sizeStr = parts[1];
         let size = 0;
 
-        if (sizeStr.endsWith("GB")) {
-          size = parseFloat(sizeStr) * 1024 * 1024 * 1024;
-        } else if (sizeStr.endsWith("MB")) {
-          size = parseFloat(sizeStr) * 1024 * 1024;
+        if (/^\d+(\.\d+)?\s*[GgMmTt][Bb]$/.test(sizeStr)) {
+          sizeStr = sizeStr.replace(/\s/g, "");
+        } else if (parts.length >= 3 && /^[GgMmTt][Bb]$/.test(parts[2])) {
+          sizeStr = parts[1] + parts[2];
         }
 
+        if (sizeStr.toUpperCase().endsWith("TB")) {
+          size = parseFloat(sizeStr) * 1024 * 1024 * 1024 * 1024;
+        } else if (sizeStr.toUpperCase().endsWith("GB")) {
+          size = parseFloat(sizeStr) * 1024 * 1024 * 1024;
+        } else if (sizeStr.toUpperCase().endsWith("MB")) {
+          size = parseFloat(sizeStr) * 1024 * 1024;
+        } else {
+          const raw = parseInt(sizeStr, 10);
+          if (!isNaN(raw)) size = raw;
+        }
+
+        const name = parts[0];
         models.push({
-          name: parts[0],
+          name,
           source: "ollama",
-          size,
+          size: size || undefined,
           status: "available",
         });
       }
@@ -95,7 +107,7 @@ async function detectLlamaCppProcesses(): Promise<DetectedModel[]> {
 
   try {
     const output = execSync(
-      'ps aux | grep -E "llama-server|llama\\.cpp" | grep -v grep || true',
+      'ps aux | grep -iE "llama[-_.]?server|llama\\.cpp|llama-server" | grep -v grep || true',
       { encoding: "utf-8", timeout: 5000 }
     );
 
@@ -108,21 +120,29 @@ async function detectLlamaCppProcesses(): Promise<DetectedModel[]> {
         const args = parts.slice(10).join(" ");
         const pid = parseInt(parts[1], 10);
 
-        const modelMatch = args.match(/--model\s+(\S+)/);
-        const modelPath = modelMatch ? modelMatch[1] : "unknown";
-        const contextMatch = args.match(/--ctx-size\s+(\d+)/);
+        const modelMatch =
+          args.match(/--model[= ](\S+)/) ||
+          args.match(/-m[= ](\S+)/);
+        const modelPath = modelMatch ? modelMatch[1].replace(/[",]/g, "") : "unknown";
+        const contextMatch =
+          args.match(/--ctx-size[= ](\d+)/) ||
+          args.match(/-c[= ](\d+)/);
         const contextSize = contextMatch ? parseInt(contextMatch[1], 10) : 4096;
-        const portMatch = args.match(/--port\s+(\d+)/);
+        const portMatch =
+          args.match(/--port[= ](\d+)/) ||
+          args.match(/--host[= ]\S+:(\d+)/);
         const port = portMatch ? parseInt(portMatch[1], 10) : 8080;
 
-        const modelName = path.basename(modelPath).replace(/\.(gguf|bin)$/i, "");
+        const modelName = modelPath !== "unknown"
+          ? path.basename(modelPath).replace(/\.(gguf|bin)$/i, "")
+          : `llama.cpp (PID ${pid})`;
 
         models.push({
           name: modelName,
           source: "llama-cpp",
           path: modelPath,
           status: "running",
-          format: path.extname(modelPath),
+          format: modelPath !== "unknown" ? path.extname(modelPath) : undefined,
         });
       }
     }

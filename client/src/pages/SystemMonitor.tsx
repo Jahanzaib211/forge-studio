@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,37 @@ import {
   XCircle,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+
+interface SystemStats {
+  cpu?: {
+    cores?: { usage: number }[];
+    model?: string;
+    totalUsage?: number;
+    loadAvg?: number[];
+  };
+  memory?: {
+    total: number;
+    free: number;
+    used: number;
+    usedPercent: number;
+    totalSwap: number;
+    freeSwap: number;
+    usedSwap: number;
+    swapUsedPercent: number;
+  };
+  gpu?: {
+    index: number;
+    utilizationGpu: number;
+    memoryUsed: number;
+    memoryTotal: number;
+    temperature: number;
+    powerDraw: number;
+    fanSpeed: number;
+  }[];
+  gpuProcesses?: { pid: number; processName: string; usedMemory: number }[];
+  topProcesses?: { pid: number; name: string; cpu: number; mem: number }[];
+  aiProcesses?: { name: string; pid: number; command: string; type: string }[];
+}
 
 function BarGauge({
   value,
@@ -63,15 +95,51 @@ function StatRow({
 }
 
 function formatBytes(bytes: number): string {
+  if (!bytes || bytes === 0) return "0 B";
   if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1) + " GB";
   if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + " MB";
   return (bytes / 1024).toFixed(1) + " KB";
 }
 
+function formatUptime(seconds: number): string {
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
 export default function SystemMonitor() {
-  const { data: stats } = trpc.systemMonitor.stats.useQuery(undefined, {
-    refetchInterval: 1000,
+  const { data: queryStats } = trpc.systemMonitor.stats.useQuery(undefined, {
+    refetchInterval: 5000,
   });
+
+  const [wsStats, setWsStats] = useState<SystemStats | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === "system_stats" && msg.data) {
+          setWsStats(msg.data);
+        }
+      } catch {}
+    };
+
+    ws.onerror = () => {};
+    ws.onclose = () => {};
+
+    return () => { ws.close(); };
+  }, []);
+
+  const stats = wsStats || queryStats;
 
   const cpu = stats?.cpu;
   const mem = stats?.memory;
@@ -332,6 +400,13 @@ export default function SystemMonitor() {
                           variant="ghost"
                           size="sm"
                           className="h-6 px-2 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                          onClick={() => {
+                            if (confirm(`Kill process ${proc.name} (PID: ${proc.pid})?`)) {
+                              fetch(`/api/system-monitor/kill-pid/${proc.pid}`, { method: "POST" })
+                                .then(() => window.location.reload())
+                                .catch(() => {});
+                            }
+                          }}
                         >
                           <XCircle className="w-3 h-3" />
                         </Button>

@@ -23,12 +23,7 @@ export default function Logs() {
 
   const requestsQuery = trpc.requests.list.useQuery({ teamId: "default", limit: 50, offset: 0 }, { refetchInterval: 10000 });
 
-  const requests = requestsQuery.data?.requests ?? [
-    { id: "req-001", provider: "openai", taskType: "chat", tokens: 1520, costUsd: 0.0023, status: "success", timestamp: new Date().toISOString() },
-    { id: "req-002", provider: "anthropic", taskType: "coding", tokens: 3400, costUsd: 0.012, status: "success", timestamp: new Date(Date.now() - 60000).toISOString() },
-    { id: "req-003", provider: "openai", taskType: "chat", tokens: 0, costUsd: 0, status: "error", timestamp: new Date(Date.now() - 120000).toISOString() },
-    { id: "req-004", provider: "meta", taskType: "fast", tokens: 890, costUsd: 0.0008, status: "success", timestamp: new Date(Date.now() - 180000).toISOString() },
-  ];
+  const requests = requestsQuery.data?.requests ?? [];
 
   const filteredRequests = requests.filter((r: any) => {
     const matchesSearch = r.id.toLowerCase().includes(searchQuery.toLowerCase()) || r.taskType.toLowerCase().includes(searchQuery.toLowerCase());

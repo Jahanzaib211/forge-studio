@@ -42,6 +42,7 @@ export default function VirtualKeys() {
   const [budgetLimit, setBudgetLimit] = useState("");
   const [tpmLimit, setTpmLimit] = useState("");
   const [rpmLimit, setRpmLimit] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
 
   const listQuery = trpc.virtualKeys.list.useQuery(undefined);
   const utils = trpc.useUtils();
@@ -54,6 +55,7 @@ export default function VirtualKeys() {
       setBudgetLimit("");
       setTpmLimit("");
       setRpmLimit("");
+      setExpiryDate("");
     },
   });
 
@@ -237,6 +239,8 @@ export default function VirtualKeys() {
                   <label className="text-xs text-slate-400 mb-1 block">Expiry Date</label>
                   <Input
                     type="date"
+                    value={expiryDate}
+                    onChange={(e) => setExpiryDate(e.target.value)}
                     className="bg-slate-700 border-slate-600 text-white"
                   />
                 </div>
@@ -343,11 +347,24 @@ export default function VirtualKeys() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" className="border-slate-600 text-slate-300 flex-1">
-                    <RefreshCw className="w-3 h-3 mr-2" />
+                  <Button
+                    variant="outline"
+                    className="border-slate-600 text-slate-300 flex-1"
+                    onClick={() => {
+                      if (selectedKey && confirm("Rotate this key? The old key will be invalidated.")) {
+                        toggleMut.mutate({ id: selectedKey.id, name: `${selectedKey.name}-rotated-${Date.now()}` });
+                      }
+                    }}
+                    disabled={toggleMut.isPending}
+                  >
+                    {toggleMut.isPending ? (
+                      <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-3 h-3 mr-2" />
+                    )}
                     Rotate Key
                   </Button>
-                  <Button variant="outline" className="border-slate-600 text-slate-300 flex-1">
+                  <Button variant="outline" className="border-slate-600 text-slate-300 flex-1" disabled>
                     <Shield className="w-3 h-3 mr-2" />
                     Spend History
                   </Button>

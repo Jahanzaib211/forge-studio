@@ -405,13 +405,17 @@ function DashboardLayoutContent({
               >
                 <PanelLeft className="h-4 w-4 text-muted-foreground" />
               </button>
-              {!isCollapsed ? (
-                <Link href="/" className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity">
-                  <img
-                    src="https://avatars.githubusercontent.com/u/695416?v=4"
-                    alt="Forge Studio"
-                    className="h-10 w-10 rounded-full shrink-0 border border-slate-700"
-                  />
+              <Link
+                href="/"
+                className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity"
+                title="Go to Home"
+              >
+                <img
+                  src="https://avatars.githubusercontent.com/u/695416?v=4"
+                  alt="Forge Studio"
+                  className={`rounded-full shrink-0 border border-slate-700 ${isCollapsed ? "h-8 w-8" : "h-10 w-10"}`}
+                />
+                {!isCollapsed && (
                   <div className="flex flex-col min-w-0">
                     <span className="font-bold tracking-tight text-sm text-white truncate">
                       FORGE STUDIO
@@ -420,8 +424,8 @@ function DashboardLayoutContent({
                       by Jahanzaib Ali
                     </span>
                   </div>
-                </Link>
-              ) : null}
+                )}
+              </Link>
             </div>
           </SidebarHeader>
 
@@ -440,7 +444,25 @@ function DashboardLayoutContent({
           <div className="border-t border-slate-800">
             {!isCollapsed && <SystemStatsBar />}
 
-            <SidebarFooter className="p-3">
+            <SidebarFooter className="p-3 space-y-2">
+              {toggleTheme && (
+                <button
+                  onClick={toggleTheme}
+                  className={`flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
+                  title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                >
+                  {theme === "dark" ? (
+                    <Sun className="h-4 w-4 text-amber-400 shrink-0" />
+                  ) : (
+                    <Moon className="h-4 w-4 text-blue-400 shrink-0" />
+                  )}
+                  {!isCollapsed && (
+                    <span className="text-sm text-muted-foreground">
+                      {theme === "dark" ? "Light Mode" : "Dark Mode"}
+                    </span>
+                  )}
+                </button>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -463,13 +485,6 @@ function DashboardLayoutContent({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem
-                    onClick={toggleTheme}
-                    className="cursor-pointer"
-                  >
-                    {theme === "dark" ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
-                    <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
-                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={logout}
                     className="cursor-pointer text-destructive focus:text-destructive"
