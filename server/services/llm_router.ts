@@ -1,5 +1,6 @@
 import axios from "axios";
 import { providerService } from "./provider_service";
+import { errorLogger } from "./error_logger";
 
 interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -118,6 +119,7 @@ export class LLMRouter {
       };
     } catch (error: any) {
       console.error("[LLMRouter] LiteLLM request failed:", error.message);
+      errorLogger.error("llm_router", `LiteLLM request failed for model ${model}: ${error.message}`, error, { model, provider: providerName });
 
       return {
         id: `msg_${Date.now()}`,

@@ -138,11 +138,28 @@ export class CustomProviderService {
 
   async findProviderForModel(modelName: string): Promise<CustomProvider | null> {
     const providers = await this.list();
+    const normalizedName = modelName.toLowerCase();
+
     for (const p of providers) {
       if (p.enabled !== 1) continue;
-      const models = p.models.split(",").map((m) => m.trim());
-      if (models.includes(modelName)) return p;
+      const models = p.models.split(",").map((m) => m.trim().toLowerCase());
+
+      // Exact match
+      if (models.includes(normalizedName)) return p;
+
+      // Match after stripping provider prefix (e.g., "my-provider/llama-3" → "llama-3")
+      const slashIndex = normalizedName.indexOf("/");
+      if (slashIndex !== -1) {
+        const strippedName = normalizedName.slice(slashIndex + 1);
+        if (models.includes(strippedName)) return p;
+      }
+
+      // Partial containment match (model name contains a stored model ID, or vice versa)
+      for (const m of models) {
+        if (normalizedName.includes(m) || m.includes(normalizedName)) return p;
+      }
     }
+
     return null;
   }
 }

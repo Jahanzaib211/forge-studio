@@ -1,320 +1,76 @@
-# FreeAPI Forge Deployment Guide
+# Forge Studio Deployment Guide
 
-This guide provides comprehensive instructions for deploying FreeAPI Forge on your node.
+## Quick Start (Docker Compose)
 
-## Quick Start with Docker Compose
-
-The fastest way to get FreeAPI Forge running is with Docker Compose, which includes Redis, MySQL, and the application.
+The fastest way to run Forge Studio:
 
 ### Prerequisites
+- Docker and Docker Compose
+- 4GB RAM minimum
+- Ports 5051, 5434, 6379 available
 
-- Docker and Docker Compose installed
-- 2GB minimum RAM available
-- Port 3000 available (configurable)
+### Steps
 
-### Deployment Steps
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/freeapi-forge.git
+1. Clone and configure:
+   git clone https://github.com/Jahanzaib211/freeapi-forge.git
    cd freeapi-forge
-   ```
-
-2. **Configure environment variables**
-   ```bash
    cp .env.example .env
-   # Edit .env with your configuration
-   nano .env
-   ```
 
-3. **Start the stack**
-   ```bash
+2. Start everything:
    docker-compose up -d
-   ```
 
-4. **Verify services are running**
-   ```bash
-   docker-compose ps
-   docker-compose logs -f app
-   ```
+3. Seed the database:
+   docker-compose exec app pnpm tsx server/seed.ts
 
-5. **Access the application**
-   - Web UI: http://localhost:3000
-   - API: http://localhost:3000/api
-   - Health check: http://localhost:3000/health
+4. Open http://localhost:5051/
 
-## Configuration
+## Services
 
-### Essential Environment Variables
+| Service | Port | Purpose |
+|---------|------|---------|
+| Forge Studio | 5051 | Main application |
+| PostgreSQL | 5434 | Database |
+| Redis | 6379 | Circuit breaker, cache |
+| LiteLLM (optional) | 5050 | LLM proxy |
+| Ollama (optional) | 11434 | Local models |
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NODE_ENV` | Environment mode | `production` |
-| `PORT` | Application port | `3000` |
-| `DATABASE_URL` | MySQL connection string | Required |
-| `REDIS_URL` | Redis connection string | Required |
-| `API_KEY` | X-API-Key for authentication | Required |
-| `JWT_SECRET` | JWT signing secret | Required |
-| `DEFAULT_MONTHLY_BUDGET_USD` | Default team budget | `10` |
+## Environment Variables
 
-### Database Configuration
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| DATABASE_URL | Yes | - | PostgreSQL connection string |
+| REDIS_URL | Yes | - | Redis connection string |
+| PORT | No | 5051 | Application port |
+| LITELLM_URL | No | - | LiteLLM proxy URL (optional) |
+| LITELLM_API_KEY | No | - | LiteLLM API key |
+| JWT_SECRET | Yes | - | Session secret |
 
-FreeAPI Forge uses MySQL for persistent storage. The database schema is automatically created on first run.
+## Manual Setup (without Docker)
 
-```bash
-# Connect to MySQL
-mysql -h localhost -u freeapi -p freeapi_forge
+1. Install PostgreSQL, Redis, Node.js 22+
+2. Create database: postgresql://user:pass@localhost:5434/forge_studio
+3. Run: pnpm install && pnpm tsx server/seed.ts && pnpm dev
 
-# Verify tables created
-SHOW TABLES;
-```
+## Production Deployment
 
-### Redis Configuration
+1. Build: pnpm build
+2. Start with PM2: pm2 start ecosystem.config.cjs
+3. Save: pm2 save && pm2 startup
 
-Redis is used for caching, rate limiting, and circuit breaker state.
+## Custom Providers (Standalone Mode)
 
-```bash
-# Test Redis connection
-redis-cli ping
-# Should return: PONG
+Forge Studio works WITHOUT LiteLLM. Add any OpenAI-compatible API:
 
-# Check Redis memory usage
-redis-cli INFO memory
-```
+1. Go to Custom Providers page
+2. Paste API URL + Key (e.g., https://api.anthropic.com/v1)
+3. Forge auto-discovers available models
+4. Use them through the standard /v1/chat/completions endpoint
 
-## Scaling & Performance
+## MCP Server
 
-### Single Node Deployment
+Forge Studio exposes itself as an MCP server:
 
-For development and small-scale deployments:
+- Endpoint: http://localhost:5051/mcp/sse
+- Available tools: chat_completion, list_models, get_system_stats
 
-```bash
-docker-compose up -d
-```
-
-### Multi-Node Deployment
-
-For production with multiple nodes:
-
-1. **Set up shared Redis** (not included in compose)
-   ```bash
-   # Use a managed Redis service or separate Redis instance
-   REDIS_URL=redis://redis-cluster:6379/0
-   ```
-
-2. **Set up shared MySQL** (not included in compose)
-   ```bash
-   # Use a managed MySQL service or separate MySQL instance
-   DATABASE_URL=mysql://user:pass@mysql-cluster:3306/db
-   ```
-
-3. **Run multiple app instances**
-   ```bash
-   docker-compose up -d --scale app=3
-   ```
-
-### Load Balancing
-
-Use nginx or your cloud provider's load balancer:
-
-```nginx
-upstream freeapi_forge {
-    server app1:3000;
-    server app2:3000;
-    server app3:3000;
-}
-
-server {
-    listen 80;
-    server_name api.example.com;
-
-    location / {
-        proxy_pass http://freeapi_forge;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
-```
-
-## Monitoring & Maintenance
-
-### Health Checks
-
-```bash
-# Simple health check
-curl http://localhost:3000/health
-
-# Detailed health check
-curl http://localhost:3000/health/detailed
-```
-
-### Logs
-
-```bash
-# View application logs
-docker-compose logs -f app
-
-# View specific service logs
-docker-compose logs -f redis
-docker-compose logs -f mysql
-```
-
-### Database Backups
-
-```bash
-# Backup MySQL database
-docker-compose exec mysql mysqldump -u freeapi -p freeapi_forge > backup.sql
-
-# Restore from backup
-docker-compose exec -T mysql mysql -u freeapi -p freeapi_forge < backup.sql
-```
-
-### Redis Persistence
-
-Redis data is persisted to `redis-data` volume. To ensure data persistence:
-
-```bash
-# Check Redis persistence
-docker-compose exec redis redis-cli CONFIG GET save
-
-# Force save
-docker-compose exec redis redis-cli BGSAVE
-```
-
-## Troubleshooting
-
-### Application won't start
-
-```bash
-# Check logs
-docker-compose logs app
-
-# Verify database connection
-docker-compose exec app curl http://localhost:3000/health/detailed
-
-# Restart services
-docker-compose restart
-```
-
-### Database connection errors
-
-```bash
-# Verify MySQL is running
-docker-compose logs mysql
-
-# Test connection
-docker-compose exec mysql mysql -u freeapi -p -e "SELECT 1"
-
-# Check DATABASE_URL format
-echo $DATABASE_URL
-```
-
-### Redis connection errors
-
-```bash
-# Verify Redis is running
-docker-compose logs redis
-
-# Test connection
-docker-compose exec redis redis-cli ping
-
-# Check REDIS_URL format
-echo $REDIS_URL
-```
-
-### High memory usage
-
-```bash
-# Check container memory
-docker stats
-
-# Reduce Redis memory
-docker-compose exec redis redis-cli CONFIG SET maxmemory 256mb
-
-# Optimize MySQL
-docker-compose exec mysql mysql -u root -p -e "SHOW VARIABLES LIKE '%buffer%'"
-```
-
-## Security Considerations
-
-### API Key Management
-
-1. Generate a strong API key:
-   ```bash
-   openssl rand -hex 32
-   ```
-
-2. Store securely in environment variables
-3. Rotate keys regularly
-4. Use different keys for different environments
-
-### Database Security
-
-1. Change default MySQL password
-2. Use strong passwords (20+ characters)
-3. Restrict database access to application only
-4. Enable SSL for database connections
-
-### Network Security
-
-1. Use HTTPS in production
-2. Implement firewall rules
-3. Use VPN for remote access
-4. Enable CORS only for trusted domains
-
-## Upgrading
-
-### Backup before upgrade
-
-```bash
-# Backup database
-docker-compose exec mysql mysqldump -u freeapi -p freeapi_forge > backup-$(date +%Y%m%d).sql
-
-# Backup Redis
-docker-compose exec redis redis-cli BGSAVE
-```
-
-### Upgrade steps
-
-```bash
-# Pull latest code
-git pull origin main
-
-# Rebuild Docker image
-docker-compose build --no-cache app
-
-# Stop current services
-docker-compose down
-
-# Start with new image
-docker-compose up -d
-
-# Verify health
-curl http://localhost:3000/health
-```
-
-## Production Checklist
-
-- [ ] Environment variables configured
-- [ ] Database backups scheduled
-- [ ] Redis persistence enabled
-- [ ] SSL/TLS certificates installed
-- [ ] Firewall rules configured
-- [ ] Monitoring and alerting set up
-- [ ] Log aggregation configured
-- [ ] API keys rotated
-- [ ] Database passwords changed
-- [ ] Health checks configured
-- [ ] Load balancer configured
-- [ ] Disaster recovery plan documented
-
-## Support
-
-For issues or questions:
-1. Check logs: `docker-compose logs`
-2. Review this guide
-3. Contact FreeAPI Forge support team
-
-## License
-
-FreeAPI Forge is released under the MIT License.
+Connect any MCP client to use Forge Studio's capabilities.

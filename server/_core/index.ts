@@ -173,6 +173,7 @@ async function startServer() {
       });
     } catch (err: any) {
       console.error("[/v1/chat/completions] Error:", err.message);
+      errorLogger.error("api.v1.chat.completions", `Request failed: ${err.message}`, err, { model: req.body?.model });
       res.status(500).json({ error: err.message });
     }
   });

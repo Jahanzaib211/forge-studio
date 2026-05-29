@@ -1,3 +1,5 @@
+import { errorLogger } from "./error_logger";
+
 export interface ProxyMessage {
   role: "system" | "user" | "assistant";
   content: string;
@@ -51,6 +53,9 @@ export async function directProxyChat(params: DirectProxyParams): Promise<ChatCo
 
   if (!response.ok) {
     const errText = await response.text().catch(() => "Unknown error");
+    errorLogger.error("direct_proxy", `Request failed: ${response.status}`, undefined, {
+      url, model: params.model, status: response.status
+    });
     throw new Error(`Provider returned HTTP ${response.status}: ${errText}`);
   }
 

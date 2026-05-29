@@ -119,6 +119,25 @@ export default function CustomProviders() {
           <p className="text-slate-400 text-lg">Paste any OpenAI-compatible API URL + key — it just works</p>
         </div>
 
+        {/* Explainer Banner */}
+        <Card className="mb-8 bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-600/30 backdrop-blur">
+          <CardContent className="p-5">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-lg bg-purple-600/20 flex items-center justify-center shrink-0 mt-0.5">
+                <Globe className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold mb-1">How Custom Providers Work</h3>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  Connect any OpenAI-compatible API (OpenRouter, Together, LocalAI, vLLM, etc.) by pasting the base URL and API key.
+                  Models are auto-discovered and routed through your provider when enabled. Custom providers take priority over built-in LiteLLM routes —
+                  when a custom provider matches a model name, it handles the request directly.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Add Provider Form */}
         <Card className="mb-8 bg-slate-800/30 border-slate-700/50 backdrop-blur">
           <CardHeader className="border-b border-slate-700/50">

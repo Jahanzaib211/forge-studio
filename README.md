@@ -221,6 +221,73 @@ Open http://localhost:5051/
 
 ---
 
+## 5-Minute Quickstart
+
+```bash
+# 1. Clone
+git clone https://github.com/Jahanzaib211/freeapi-forge.git
+cd freeapi-forge
+
+# 2. Install
+pnpm install
+
+# 3. Start database (or use Docker)
+docker run -d --name forge-db -p 5434:5432 \
+  -e POSTGRES_USER=litellm_user \
+  -e POSTGRES_PASSWORD=litellm_password_123 \
+  -e POSTGRES_DB=forge_studio \
+  postgres:17
+
+# 4. Start Redis
+docker run -d --name forge-redis -p 6379:6379 redis:alpine
+
+# 5. Seed database
+pnpm tsx server/seed.ts
+
+# 6. Start
+pnpm dev
+```
+
+Open http://localhost:5051/ - you're running Forge Studio.
+
+---
+
+## MCP Integration
+
+Forge Studio works as both an MCP client and server.
+
+### As MCP Server
+
+Forge Studio exposes its capabilities as MCP tools. Any MCP-compatible client (Claude Desktop, Cursor, etc.) can connect:
+
+**Endpoint**: `http://localhost:5051/mcp/sse`
+
+**Available tools**:
+- `chat_completion` - Send a chat message
+- `list_models` - List available models
+- `get_system_stats` - Get CPU/GPU/RAM stats
+
+**Connect from Claude Desktop** (claude_desktop_config.json):
+```json
+{
+  "mcpServers": {
+    "forge-studio": {
+      "url": "http://localhost:5051/mcp/sse"
+    }
+  }
+}
+```
+
+### As MCP Host
+
+Connect external MCP servers to Forge Studio:
+1. Go to MCP Servers page
+2. Add server URL and transport type
+3. Forge Studio discovers and lists available tools
+4. Use tools in the Forge Builder workflow
+
+---
+
 ## Environment Variables
 
 ```

@@ -3,6 +3,7 @@ import axios from "axios";
 import { providerService } from "./provider_service";
 import { customProviderService } from "./custom_provider";
 import { directProxyStream } from "./direct_proxy";
+import { errorLogger } from "./error_logger";
 
 const TASK_TYPE_MODEL_MAP: Record<string, string> = {
   chat: "fast-70b",
@@ -63,6 +64,7 @@ export async function handleStreamChat(req: Request, res: Response) {
       return;
     } catch (err: any) {
       providerService.recordFailure(`custom:${customProvider.name}`);
+      errorLogger.error("stream_handler", `Custom provider ${customProvider.name} failed for model ${model}: ${err.message}`, err, { model, provider: customProvider.name });
       const errorData = {
         choices: [{ delta: { content: `Error from ${customProvider.name}: ${err.message}` }, finish_reason: "error" }],
       };
@@ -121,6 +123,12 @@ export async function handleStreamChat(req: Request, res: Response) {
           if (data === "[DONE]") {
             res.write("data: [DONE]\n\n");
             providerService.recordSuccess(providerName);
+            errorLogger.info("stream_handler", "Chat completion served", {
+              model,
+              taskType,
+              provider: providerName,
+              tokens: tokenCount,
+            });
             res.end();
             return;
           }
@@ -139,6 +147,7 @@ export async function handleStreamChat(req: Request, res: Response) {
 
     response.data.on("error", (err: Error) => {
       providerService.recordFailure(providerName);
+      errorLogger.error("stream_handler", `LiteLLM stream error for model ${model}: ${err.message}`, err, { model, provider: providerName });
       const errorData = {
         choices: [{ delta: { content: `\n\n[Stream error: ${err.message}]` }, finish_reason: "error" }],
       };
@@ -148,6 +157,7 @@ export async function handleStreamChat(req: Request, res: Response) {
     });
   } catch (error: any) {
     providerService.recordFailure(providerName);
+    errorLogger.error("stream_handler", `LiteLLM request failed for model ${model}: ${error.message}`, error, { model, provider: providerName });
     const errorData = {
       choices: [{ delta: { content: `Error: ${error.message}` }, finish_reason: "error" }],
     };

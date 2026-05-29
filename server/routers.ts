@@ -173,6 +173,18 @@ export const appRouter = router({
 
         await updateBudgetSpend(1, monthYear, costUsd);
 
+        await createAuditLog(
+          ctx.user?.id || null,
+          1, // teamId
+          "CHAT_COMPLETION",
+          JSON.stringify({
+            model: input.taskType,
+            tokens: response.usage?.total_tokens || 0,
+            latencyMs: Date.now() - startTime,
+            provider: response.provider || "unknown",
+          })
+        );
+
         return response;
       }),
   }),

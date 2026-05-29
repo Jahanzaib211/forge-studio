@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -234,10 +234,9 @@ export default function ErrorLogs() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredEvents.map((event) => (
-                    <>
+                    {filteredEvents.map((event) => (
+                    <Fragment key={event.id}>
                       <TableRow
-                        key={event.id}
                         className="border-slate-700/50 hover:bg-slate-700/30 cursor-pointer"
                         onClick={() => setExpandedRow(expandedRow === event.id ? null : event.id)}
                       >
@@ -298,7 +297,7 @@ export default function ErrorLogs() {
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </Fragment>
                   ))}
                   {filteredEvents.length === 0 && (
                     <TableRow className="border-slate-700/50">
