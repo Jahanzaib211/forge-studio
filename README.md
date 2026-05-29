@@ -198,57 +198,40 @@ Configure the application:
 
 ## Running It
 
-```bash
-# Clone
-git clone https://github.com/Jahanzaib211/forge-studio.git
-cd forge-studio
+**Default login**: The seed script creates an admin user at `admin@forge.local`. The app uses a mock session — once you visit the page, you're in. Change this before exposing to others.
 
-# Install
-pnpm install
-
-# Database
-# Make sure PostgreSQL is running on port 5434
-pnpm tsx server/seed.ts
-
-# Redis (needed for circuit breaker)
-docker run -d --name redis -p 6379:6379 redis:alpine
-
-# Start
-pnpm dev
-```
-
-Open http://localhost:5051/
-
----
-
-## 5-Minute Quickstart
+### Option A: Docker (recommended)
 
 ```bash
-# 1. Clone
 git clone https://github.com/Jahanzaib211/forge-studio.git
 cd forge-studio
-
-# 2. Install
 pnpm install
 
-# 3. Start database (or use Docker)
+# Start PostgreSQL + Redis
 docker run -d --name forge-db -p 5434:5432 \
   -e POSTGRES_USER=litellm_user \
   -e POSTGRES_PASSWORD=litellm_password_123 \
   -e POSTGRES_DB=forge_studio \
   postgres:17
 
-# 4. Start Redis
 docker run -d --name forge-redis -p 6379:6379 redis:alpine
 
-# 5. Seed database
+# Seed and start
 pnpm tsx server/seed.ts
-
-# 6. Start
 pnpm dev
 ```
 
-Open http://localhost:5051/ - you're running Forge Studio.
+### Option B: You already have PostgreSQL + Redis
+
+```bash
+git clone https://github.com/Jahanzaib211/forge-studio.git
+cd forge-studio
+pnpm install
+pnpm tsx server/seed.ts
+pnpm dev
+```
+
+Open http://localhost:5051/
 
 ---
 
@@ -291,7 +274,7 @@ Connect external MCP servers to Forge Studio:
 ## Environment Variables
 
 ```
-DATABASE_URL=postgresql://litellm_user:litellm_password_123@localhost:5434/freeapi_forge
+DATABASE_URL=postgresql://litellm_user:litellm_password_123@localhost:5434/forge_studio
 REDIS_URL=redis://localhost:6379/1
 LITELLM_URL=http://localhost:5050        # optional - Forge works without it
 LITELLM_API_KEY=sk-ai-lab-master-key     # optional
