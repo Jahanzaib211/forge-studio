@@ -107,6 +107,7 @@ const sidebarSections: Section[] = [
     items: [
       { icon: Activity, label: "System Monitor", path: "/system-monitor" },
       { icon: Settings, label: "Process Manager", path: "/process-manager" },
+      { icon: Cpu, label: "Local Models", path: "/local-models" },
       { icon: Brain, label: "HuggingFace Hub", path: "/huggingface" },
       { icon: BarChart3, label: "Usage & Logs", path: "/usage" },
       { icon: HeartPulse, label: "Providers", path: "/providers" },

@@ -44,6 +44,7 @@ import ProviderHealth from "./pages/ProviderHealth";
 import Webhooks from "./pages/Webhooks";
 import AILabHub from "./pages/AILabHub";
 import AuditLogs from "./pages/AuditLogs";
+import LocalModelManager from "./pages/LocalModelManager";
 
 function Router() {
   return (
@@ -74,6 +75,7 @@ function Router() {
       <Route path="/budgets" component={() => <DashboardLayout><Budgets /></DashboardLayout>} />
       <Route path="/system-monitor" component={() => <DashboardLayout><SystemMonitor /></DashboardLayout>} />
       <Route path="/process-manager" component={() => <DashboardLayout><ProcessManager /></DashboardLayout>} />
+      <Route path="/local-models" component={() => <DashboardLayout><LocalModelManager /></DashboardLayout>} />
       <Route path="/llm-discoverer" component={() => <DashboardLayout><LLMDiscoverer /></DashboardLayout>} />
       <Route path="/api-reference" component={() => <DashboardLayout><APIReference /></DashboardLayout>} />
       <Route path="/ai-hub" component={() => <DashboardLayout><AIHub /></DashboardLayout>} />

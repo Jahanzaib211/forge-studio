@@ -1,6 +1,7 @@
 import axios from "axios";
 import { providerService } from "./provider_service";
 import { errorLogger } from "./error_logger";
+import { localModelManager } from "./local_model_manager";
 
 interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -42,7 +43,7 @@ const TASK_TYPE_MODEL_MAP: Record<string, string> = {
   vision: "gemini-flash",
   fast: "fast-8b",
   long_context: "smart",
-  local: "qwen-moe",
+  local: "__LOCAL__",
 };
 
 export class LLMRouter {
@@ -55,7 +56,13 @@ export class LLMRouter {
   }
 
   async complete(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
-    const model = TASK_TYPE_MODEL_MAP[request.taskType || "chat"] || "fast-70b";
+    const taskType = request.taskType || "chat";
+    const model = TASK_TYPE_MODEL_MAP[taskType] || "fast-70b";
+
+    if (model === "__LOCAL__") {
+      return this.routeToLocal(request);
+    }
+
     const providerName = this.extractProvider(model);
 
     const circuitOpen = await providerService.isCircuitOpen(providerName);
@@ -64,7 +71,7 @@ export class LLMRouter {
         id: `msg_${Date.now()}`,
         object: "chat.completion",
         created: Math.floor(Date.now() / 1000),
-        model: model,
+        model,
         provider: providerName,
         choices: [
           {
@@ -76,11 +83,7 @@ export class LLMRouter {
             finish_reason: "error",
           },
         ],
-        usage: {
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0,
-        },
+        usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
       };
     }
 
@@ -95,7 +98,7 @@ export class LLMRouter {
         },
         {
           headers: {
-            "Authorization": `Bearer ${this.litellmApiKey}`,
+            Authorization: `Bearer ${this.litellmApiKey}`,
             "Content-Type": "application/json",
           },
           timeout: 60000,
@@ -111,21 +114,20 @@ export class LLMRouter {
         model: data.model || model,
         provider: this.extractProvider(data.model || model),
         choices: data.choices || [],
-        usage: data.usage || {
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0,
-        },
+        usage: data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
       };
     } catch (error: any) {
       console.error("[LLMRouter] LiteLLM request failed:", error.message);
-      errorLogger.error("llm_router", `LiteLLM request failed for model ${model}: ${error.message}`, error, { model, provider: providerName });
+      errorLogger.error("llm_router", `LiteLLM request failed for model ${model}: ${error.message}`, error, {
+        model,
+        provider: providerName,
+      });
 
       return {
         id: `msg_${Date.now()}`,
         object: "chat.completion",
         created: Math.floor(Date.now() / 1000),
-        model: model,
+        model,
         provider: "error",
         choices: [
           {
@@ -137,11 +139,74 @@ export class LLMRouter {
             finish_reason: "error",
           },
         ],
-        usage: {
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0,
+        usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+      };
+    }
+  }
+
+  private async routeToLocal(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
+    const activePort = localModelManager.getActiveModelPort();
+    if (!activePort) {
+      return {
+        id: `msg_${Date.now()}`,
+        object: "chat.completion",
+        created: Math.floor(Date.now() / 1000),
+        model: "local",
+        provider: "local",
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: "assistant",
+              content: "Error: No local model is currently active. Go to Local Models page to activate one.",
+            },
+            finish_reason: "error",
+          },
+        ],
+        usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+      };
+    }
+
+    try {
+      const response = await axios.post(
+        `http://127.0.0.1:${activePort}/v1/chat/completions`,
+        {
+          messages: request.messages,
+          max_tokens: request.maxTokens || 1024,
+          temperature: request.temperature || 0.7,
         },
+        { timeout: 120000 }
+      );
+
+      const data = response.data;
+      return {
+        id: data.id || `msg_${Date.now()}`,
+        object: "chat.completion",
+        created: data.created || Math.floor(Date.now() / 1000),
+        model: data.model || "local",
+        provider: "local",
+        choices: data.choices || [],
+        usage: data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+      };
+    } catch (error: any) {
+      console.error("[LLMRouter] Local model request failed:", error.message);
+      return {
+        id: `msg_${Date.now()}`,
+        object: "chat.completion",
+        created: Math.floor(Date.now() / 1000),
+        model: "local",
+        provider: "local",
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: "assistant",
+              content: `Error from local model: ${error.message}`,
+            },
+            finish_reason: "error",
+          },
+        ],
+        usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
       };
     }
   }
